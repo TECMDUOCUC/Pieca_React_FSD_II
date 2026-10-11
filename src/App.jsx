@@ -3,7 +3,7 @@ import Index from "./pages/Index";
 
 export default function App() {
   return (
-    <BrowserRouter basename="/Pieca_React_FSD_II">
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Index/>} />
       </Routes>

@@ -32,7 +32,7 @@ export default function Home({items, loading}) {
           <div className="text-black embed-responsive embed-responsive-1by1">
             <h3>&bull; A word from our sponsors:</h3>
             <video controls>
-              <source src="/media/YEAH.mp4" type="video/mp4"/>
+              <source src={`${import.meta.env.BASE_URL}media/YEAH.mp4`} type="video/mp4"/>
             Tu navegador no soporta la genialidad de PIECA&reg;
             </video>
           </div>

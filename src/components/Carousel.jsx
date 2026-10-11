@@ -98,7 +98,7 @@ export default function Carousel({ items = [] }) {
 
                   <div className="carousel-card-media">
                     <img
-                      src={item.imgdir}
+                      src={`${import.meta.env.BASE_URL}${item.imgdir}`}
                       alt={item.name}
                       className="carousel-card-img"
                     />

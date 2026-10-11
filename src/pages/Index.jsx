@@ -10,7 +10,7 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    fetch('/data/rocks.json')
+    fetch(`${import.meta.env.BASE_URL}data/rocks.json`)
       .then(res => res.json())
       .then(data => {
         setItems(data);
