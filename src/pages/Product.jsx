@@ -1,4 +1,3 @@
-// src/pages/ProductDetail.jsx
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import rocksData from '../data/rocks.json';
@@ -22,7 +21,7 @@ const emptyData = {
   width: 'N/A',
   length: 'N/A',
   volume: 'N/A',
-  imgdir: 'assets/images/attachment.gif',
+  imgdir: 'assets/attachment.gif',
 };
 
 function getCart() {
