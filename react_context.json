@@ -1,0 +1,301 @@
+{
+  "root": "./",
+  "files": [
+    {
+      "path": ".gitignore",
+      "size_bytes": 277
+    },
+    {
+      "path": "eslint.config.js",
+      "size_bytes": 589
+    },
+    {
+      "path": "index.html",
+      "size_bytes": 801
+    },
+    {
+      "path": "karma.conf.cjs",
+      "size_bytes": 1569
+    },
+    {
+      "path": "package-lock.json",
+      "size_bytes": 216205
+    },
+    {
+      "path": "package.json",
+      "size_bytes": 1171
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 1043
+    },
+    {
+      "path": "scanner.py",
+      "size_bytes": 1031
+    },
+    {
+      "path": "vite.config.js",
+      "size_bytes": 201
+    },
+    {
+      "path": "dist/404.html",
+      "size_bytes": 653
+    },
+    {
+      "path": "dist/favicon.ico",
+      "size_bytes": 9662
+    },
+    {
+      "path": "dist/index.html",
+      "size_bytes": 956
+    },
+    {
+      "path": "dist/assets/1.png",
+      "size_bytes": 4896387
+    },
+    {
+      "path": "dist/assets/10.png",
+      "size_bytes": 544030
+    },
+    {
+      "path": "dist/assets/11.png",
+      "size_bytes": 786899
+    },
+    {
+      "path": "dist/assets/12.png",
+      "size_bytes": 679680
+    },
+    {
+      "path": "dist/assets/13.png",
+      "size_bytes": 213695
+    },
+    {
+      "path": "dist/assets/14.png",
+      "size_bytes": 434623
+    },
+    {
+      "path": "dist/assets/15.png",
+      "size_bytes": 1134595
+    },
+    {
+      "path": "dist/assets/16.png",
+      "size_bytes": 1179288
+    },
+    {
+      "path": "dist/assets/17.png",
+      "size_bytes": 834781
+    },
+    {
+      "path": "dist/assets/18.png",
+      "size_bytes": 1274705
+    },
+    {
+      "path": "dist/assets/19.png",
+      "size_bytes": 374813
+    },
+    {
+      "path": "dist/assets/2.webp",
+      "size_bytes": 31742
+    },
+    {
+      "path": "dist/assets/3.png",
+      "size_bytes": 1012891
+    },
+    {
+      "path": "dist/assets/4.png",
+      "size_bytes": 919796
+    },
+    {
+      "path": "dist/assets/5.png",
+      "size_bytes": 455643
+    },
+    {
+      "path": "dist/assets/6.png",
+      "size_bytes": 521940
+    },
+    {
+      "path": "dist/assets/7.png",
+      "size_bytes": 223447
+    },
+    {
+      "path": "dist/assets/8.png",
+      "size_bytes": 4439038
+    },
+    {
+      "path": "dist/assets/9.png",
+      "size_bytes": 1186463
+    },
+    {
+      "path": "dist/assets/attachment.gif",
+      "size_bytes": 2572983
+    },
+    {
+      "path": "dist/assets/index-CnjOarnB.js",
+      "size_bytes": 266236
+    },
+    {
+      "path": "dist/assets/index-DjAUR4BJ.css",
+      "size_bytes": 395506
+    },
+    {
+      "path": "dist/media/YEAH.mp4",
+      "size_bytes": 6839797
+    },
+    {
+      "path": "public/404.html",
+      "size_bytes": 653
+    },
+    {
+      "path": "public/favicon.ico",
+      "size_bytes": 9662
+    },
+    {
+      "path": "public/assets/1.png",
+      "size_bytes": 4896387
+    },
+    {
+      "path": "public/assets/10.png",
+      "size_bytes": 544030
+    },
+    {
+      "path": "public/assets/11.png",
+      "size_bytes": 786899
+    },
+    {
+      "path": "public/assets/12.png",
+      "size_bytes": 679680
+    },
+    {
+      "path": "public/assets/13.png",
+      "size_bytes": 213695
+    },
+    {
+      "path": "public/assets/14.png",
+      "size_bytes": 434623
+    },
+    {
+      "path": "public/assets/15.png",
+      "size_bytes": 1134595
+    },
+    {
+      "path": "public/assets/16.png",
+      "size_bytes": 1179288
+    },
+    {
+      "path": "public/assets/17.png",
+      "size_bytes": 834781
+    },
+    {
+      "path": "public/assets/18.png",
+      "size_bytes": 1274705
+    },
+    {
+      "path": "public/assets/19.png",
+      "size_bytes": 374813
+    },
+    {
+      "path": "public/assets/2.webp",
+      "size_bytes": 31742
+    },
+    {
+      "path": "public/assets/3.png",
+      "size_bytes": 1012891
+    },
+    {
+      "path": "public/assets/4.png",
+      "size_bytes": 919796
+    },
+    {
+      "path": "public/assets/5.png",
+      "size_bytes": 455643
+    },
+    {
+      "path": "public/assets/6.png",
+      "size_bytes": 521940
+    },
+    {
+      "path": "public/assets/7.png",
+      "size_bytes": 223447
+    },
+    {
+      "path": "public/assets/8.png",
+      "size_bytes": 4439038
+    },
+    {
+      "path": "public/assets/9.png",
+      "size_bytes": 1186463
+    },
+    {
+      "path": "public/assets/attachment.gif",
+      "size_bytes": 2572983
+    },
+    {
+      "path": "public/media/YEAH.mp4",
+      "size_bytes": 6839797
+    },
+    {
+      "path": "src/App.jsx",
+      "size_bytes": 399
+    },
+    {
+      "path": "src/main.jsx",
+      "size_bytes": 265
+    },
+    {
+      "path": "src/components/Blog.jsx",
+      "size_bytes": 524
+    },
+    {
+      "path": "src/components/Carousel.jsx",
+      "size_bytes": 4138
+    },
+    {
+      "path": "src/components/ContactForm.jsx",
+      "size_bytes": 1464
+    },
+    {
+      "path": "src/components/Footer.jsx",
+      "size_bytes": 685
+    },
+    {
+      "path": "src/components/Header.jsx",
+      "size_bytes": 692
+    },
+    {
+      "path": "src/components/Home.jsx",
+      "size_bytes": 2359
+    },
+    {
+      "path": "src/components/QuoteSection.jsx",
+      "size_bytes": 1391
+    },
+    {
+      "path": "src/components/RockCard.jsx",
+      "size_bytes": 1027
+    },
+    {
+      "path": "src/css/App.css",
+      "size_bytes": 2891
+    },
+    {
+      "path": "src/data/blogs.json",
+      "size_bytes": 735
+    },
+    {
+      "path": "src/data/rocks.json",
+      "size_bytes": 4796
+    },
+    {
+      "path": "src/pages/Blogs.jsx",
+      "size_bytes": 805
+    },
+    {
+      "path": "src/pages/Blogs.spec.js",
+      "size_bytes": 1083
+    },
+    {
+      "path": "src/pages/Index.jsx",
+      "size_bytes": 953
+    }
+  ]
+}
