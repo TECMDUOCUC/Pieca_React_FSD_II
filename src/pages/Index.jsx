@@ -26,10 +26,13 @@ export default function Index() {
   return (
     <>
       <QuoteSection items={items}/>
-      <Carousel items={items}/>
-      <Home items={items} loading={loading}/>
+
+      <main className="flex-grow-1">
+        <Carousel items={items}/>
+        <Home items={items} loading={loading}/>
+      </main>
+
       <Footer/>
     </>
-  
   );
 }

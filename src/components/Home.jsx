@@ -8,7 +8,7 @@ export default function Home({items, loading}) {
   }
 
   return (
-    <section className="container my-5">
+    <section className="container my-5" id="about">
 
         <div className="row">
           
@@ -39,7 +39,7 @@ export default function Home({items, loading}) {
 
           <div className="col-md-4 mb-4 text-black">
             <h3>&bull; ¿Quieres más de PIECA&reg;?</h3>
-            <Link to="/blogs" className="text-black">Ir al BLOG</Link>
+            <Link to="/blog" className="text-black">Ir al BLOG</Link>
           </div>
         </div>
       </section>

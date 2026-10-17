@@ -1,12 +1,10 @@
 import { Link } from 'react-router';
 
-function Footer() {
+export default function Footer() {
   return (
-    <footer className="bg-black text-white py-2 px-4 mt-auto d-flex justify-content-between align-items-center" style={{ height: '70px' }}>
+    <footer className="bg-black text-white py-2 px-4 mt-auto d-flex justify-content-between align-items-center text-align-right" style={{ height: '70px' }}>
       
-      <h2 className="m-0 h4">
-        <Link to="/" className="text-white text-decoration-none"><b>Pieca&reg;</b></Link>
-      </h2>
+      <Link to="/" className="text-white text-decoration-none"><b>Pieca&reg;</b></Link>
 
       <p className="m-0 d-md-block">&copy; 2026 Pieca&reg;. Todos los derechos reservados.</p>
 
@@ -18,5 +16,3 @@ function Footer() {
     </footer>
   );
 }
-
-export default Footer;

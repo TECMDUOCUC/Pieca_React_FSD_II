@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "title": "El Arte de Seleccionar la Piedra Perfecta",
+    "date": "16/10/2026",
+    "description": "Descubra cómo nuestro equipo identifica las piedras más exóticas en las playas del sur del mundo. Analizamos el peso, la porosidad y la simetría para asegurar que usted obtenga la mejor calidad geológica en sus manos.",
+    "uri": "https://wikipedia.org/"
+  },
+  {
+    "id": 2,
+    "title": "Nueva Colección: Rocas Volcánicas",
+    "date": "15/10/2026",
+    "description": "Las piedras ígneas han llegado a nuestro catálogo. Conozca las propiedades térmicas y decorativas de estas piezas extraídas directamente de zonas volcánicas inactivas.",
+    "uri": "https://wikipedia.org/"
+  }
+]
