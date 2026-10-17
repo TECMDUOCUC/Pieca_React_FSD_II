@@ -42,6 +42,7 @@ export default function Header() {
         ) : (
           // Layout for Logged In Users
           <>
+            <Link to="/catalog" className="text-white text-decoration-none">Catálogo</Link>
             <Link to="/cart" className="text-white text-decoration-none">Carrito</Link>
             <Link to="/admin" className="text-white text-decoration-none">Admin</Link>
             <button 
