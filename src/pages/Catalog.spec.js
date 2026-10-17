@@ -1,3 +1,4 @@
+// src/pages/CatalogPage.spec.js
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
@@ -70,9 +71,10 @@ describe('Pruebas de renderizado de Catálogo usando datos JSON', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const searchInput = container.querySelector('#catalog-search');
+    // We use the first rock's name to ensure a match exists in the current JSON
     const firstRockName = rocksData[0].name;
 
-    // Type a query that matches only the first rock
+    // Simulate typing into the input
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype, 'value'
     ).set;

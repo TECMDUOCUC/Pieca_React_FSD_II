@@ -174,3 +174,33 @@ footer {
 .text-align-right {
   text-align: right;
 }
+
+
+.productDetails{
+    width: 40vw;
+}
+
+.productAlign {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    padding: 20px 30px;
+}
+
+.productSquare {
+    background-color: black;
+    max-width: 30vw;
+    aspect-ratio: 1/1;
+    height: auto;
+
+    display: flex;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+.productSquare img {
+    width: 80%;
+    height: auto;
+    object-fit: contain;
+}
