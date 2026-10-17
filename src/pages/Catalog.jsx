@@ -47,8 +47,13 @@ export default function CatalogPage() {
                 ) : (
                   <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 justify-content-center">
                   {filtered.map((rock, index) => (
-                    <RockCard item={rock} index={index} cardState="active" />
-                  ))}
+                  <RockCard 
+                    key={`${rock.name}-${index}`} 
+                    item={rock} 
+                    index={index} 
+                    cardState="active" 
+                  />
+                ))}
                 </div>
                 )}
               </div>
@@ -61,3 +66,6 @@ export default function CatalogPage() {
     
   );
 }
+
+
+

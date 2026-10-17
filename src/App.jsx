@@ -7,7 +7,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Cart from "./pages/Cart";
 import Receipt from './pages/Receipt';
-
+import Contact from './pages/Contact';
+import Admin from './pages/Admin';
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -20,6 +21,8 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/cart" element={<Cart/>}/>
         <Route path="/receipt" element={<Receipt />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   );
