@@ -1,0 +1,1 @@
+JSON de salida como boleta (para enviar, guardar el JSON).
