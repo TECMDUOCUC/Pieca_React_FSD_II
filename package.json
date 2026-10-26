@@ -20,15 +20,19 @@
     "react-router": "^8.4.0"
   },
   "devDependencies": {
+    "@chiragrupani/karma-chromium-edge-launcher": "^2.5.1",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "0.24.0",
+    "esbuild-plugin-istanbul": "^0.3.0",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "gh-pages": "^6.3.0",
     "globals": "^17.12.0",
+    "install": "^0.13.0",
     "jasmine-core": "^5.1.2",
     "karma": "^6.4.4",
     "karma-chrome-launcher": "^3.2.0",
@@ -36,6 +40,8 @@
     "karma-edge-launcher": "^0.4.2",
     "karma-esbuild": "^2.3.0",
     "karma-jasmine": "^5.1.0",
+    "karma-jasmine-html-reporter": "^2.3.0",
+    "npm": "^12.2.1",
     "vite": "^8.3.4"
   },
   "allowScripts": {

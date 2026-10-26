@@ -149,4 +149,25 @@ describe('Pruebas de renderizado y lógica de Registro', () => {
     expect(user.name).toBe('Juan Perez');
     expect(user.rut).toBe('12.345.678-5');
   });
+
+  it('debe mostrar error si el cuerpo del RUT tiene letras', async () => {
+    root.render(<BrowserRouter><Register /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    const form = container.querySelector('form');
+    const inputs = form.querySelectorAll('input');
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype, 'value'
+    ).set;
+    const setVal = (i, v) => {
+      setter.call(inputs[i], v);
+      inputs[i].dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    setVal(0, 'Test');
+    setVal(1, 'ABC12345-5');
+    setVal(2, 'test@duoc.cl');
+    setVal(3, 'pwd');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 50));
+    expect(container.textContent).toContain('El RUT ingresado no es válido.');
+  });
 });

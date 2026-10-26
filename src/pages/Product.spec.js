@@ -19,6 +19,7 @@ describe('Pruebas de renderizado de Detalle de Producto usando datos JSON', () =
     document.body.appendChild(container);
     root = createRoot(container);
     localStorage.clear();
+    spyOn(window, 'alert').and.callFake(() => {});
   });
 
   afterEach(() => {
@@ -126,4 +127,48 @@ describe('Pruebas de renderizado de Detalle de Producto usando datos JSON', () =
     const button = container.querySelector('button');
     expect(button.disabled).toBe(true);
   });
+
+
+  it('debe alertar y redirigir si no hay usuario al añadir', async () => {
+    window.history.pushState({}, '', '/product?id=0');
+    root.render(<BrowserRouter><ProductDetail /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    const btn = Array.from(container.querySelectorAll('button'))
+      .find(b => b.textContent.includes('Añadir a carrito'));
+    btn.click();
+    await new Promise(r => setTimeout(r, 50));
+    expect(window.alert).toHaveBeenCalledWith(
+      'Debe iniciar sesión para añadir productos al carrito.'
+    );
+    expect(localStorage.getItem('pieca_cart')).toBeNull();
+  });
+
+  it('debe añadir producto nuevo al carrito si hay usuario', async () => {
+    localStorage.setItem('pieca_user', JSON.stringify({ email: 'a@duoc.cl' }));
+    window.history.pushState({}, '', '/product?id=0');
+    root.render(<BrowserRouter><ProductDetail /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    const btn = Array.from(container.querySelectorAll('button'))
+      .find(b => b.textContent.includes('Añadir a carrito'));
+    btn.click();
+    await new Promise(r => setTimeout(r, 50));
+    const cart = JSON.parse(localStorage.getItem('pieca_cart'));
+    expect(cart).toEqual([{ id: 0, quantity: 1 }]);
+    expect(container.textContent).toContain('¡Añadido al carrito!');
+  });
+
+  it('debe incrementar cantidad si el producto ya está en el carrito', async () => {
+    localStorage.setItem('pieca_user', JSON.stringify({ email: 'a@duoc.cl' }));
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 0, quantity: 1 }]));
+    window.history.pushState({}, '', '/product?id=0');
+    root.render(<BrowserRouter><ProductDetail /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    const btn = Array.from(container.querySelectorAll('button'))
+      .find(b => b.textContent.includes('Añadir a carrito'));
+    btn.click();
+    await new Promise(r => setTimeout(r, 50));
+    const cart = JSON.parse(localStorage.getItem('pieca_cart'));
+    expect(cart[0].quantity).toBe(2);
+  });
+
 });

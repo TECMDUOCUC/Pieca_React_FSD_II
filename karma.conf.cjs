@@ -1,9 +1,5 @@
 const path = require('path');
-
-process.env.CHROME_BIN =
-  process.env.CHROME_BIN ||
-  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' ||
-  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe';
+const { esbuildPluginIstanbul } = require('esbuild-plugin-istanbul');
 
 module.exports = function (config) {
   config.set({
@@ -11,20 +7,18 @@ module.exports = function (config) {
     frameworks: ['jasmine'],
 
     files: [
-      { pattern: 'src/**/*.spec.js', watched: false },
-      { pattern: 'src/**/*.spec.jsx', watched: false }
+      { pattern: 'src/**/*.spec.js', watched: false }
     ],
 
     plugins: [
       'karma-jasmine',
-      'karma-chrome-launcher',
+      '@chiragrupani/karma-chromium-edge-launcher',
       'karma-esbuild',
       'karma-coverage'
     ],
 
     preprocessors: {
-      'src/**/*.spec.js': ['esbuild'],
-      'src/**/*.spec.jsx': ['esbuild']
+      'src/**/*.spec.js': ['esbuild']
     },
 
     esbuild: {
@@ -33,13 +27,24 @@ module.exports = function (config) {
       format: 'iife',
       bundle: true,
       jsx: 'automatic',
-      loader: {
-        '.js': 'jsx',
-        '.jsx': 'jsx'
-      },
+      loader: { '.js': 'jsx', '.jsx': 'jsx' },
+      resolveExtensions: ['.jsx', '.js', '.json'],
       define: {
-        'process.env.NODE_ENV': '"test"'
-      }
+        'process.env.NODE_ENV': '"test"',
+        'import.meta.env.BASE_URL': JSON.stringify('/')
+      },
+      plugins: [
+        esbuildPluginIstanbul({
+          filter: /\.[cm]?js$/,
+          loader: 'jsx',
+          name: 'istanbul-loader-js'
+        }),
+        esbuildPluginIstanbul({
+          filter: /\.jsx$/,
+          loader: 'jsx',
+          name: 'istanbul-loader-jsx'
+        })
+      ]
     },
 
     reporters: ['progress', 'coverage'],
@@ -56,20 +61,9 @@ module.exports = function (config) {
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: false,
-
-    browsers: ['EdgeChromiumHeadless'],
-    customLaunchers: {
-      EdgeChromiumHeadless: {
-        base: 'ChromeHeadless',
-        flags: [
-          '--no-sandbox',
-          '--disable-gpu',
-          '--disable-software-rasterizer'
-        ]
-      }
-    },
-
+    browsers: ['EdgeHeadless'],
     singleRun: true,
     concurrency: Infinity
   });
 };
+

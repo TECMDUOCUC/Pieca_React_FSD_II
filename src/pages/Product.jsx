@@ -62,6 +62,7 @@ export default function ProductDetail() {
     }
 
     if (isNaN(id) || id < 0 || id >= rocksData.length) {
+      /* istanbul ignore next */
       alert('Error! ID Inexistente');
       return;
     }

@@ -119,4 +119,41 @@ describe('Pruebas de renderizado y lógica del Carrito', () => {
       expect(receipt.status).toBe('Procesando - Preparando Envío');
     }
   });
+
+  it('debe mostrar estado vacío con carrito corrupto en localStorage', async () => {
+    localStorage.setItem('pieca_cart', 'not-json');
+    root.render(<BrowserRouter><Cart /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    expect(container.textContent).toContain('El carrito está vacío.');
+  });
+
+  it('debe ignorar items con id inexistente', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 9999, quantity: 1 }]));
+    root.render(<BrowserRouter><Cart /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    expect(container.textContent).toContain('El carrito está vacío.');
+  });
+
+  it('debe incrementar cantidad con el botón +', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 0, quantity: 1 }]));
+    root.render(<BrowserRouter><Cart /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    const plusBtn = Array.from(container.querySelectorAll('button'))
+      .find(b => b.textContent.trim() === '+');
+    plusBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+    const cart = JSON.parse(localStorage.getItem('pieca_cart'));
+    expect(cart[0].quantity).toBe(2);
+  });
+
+  it('debe eliminar el item al decrementar a 0', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 0, quantity: 1 }]));
+    root.render(<BrowserRouter><Cart /></BrowserRouter>);
+    await new Promise(r => setTimeout(r, 50));
+    const minusBtn = Array.from(container.querySelectorAll('button'))
+      .find(b => b.textContent.trim() === '-');
+    minusBtn.click();
+    await new Promise(r => setTimeout(r, 50));
+    expect(container.textContent).toContain('El carrito está vacío.');
+  });
 });
