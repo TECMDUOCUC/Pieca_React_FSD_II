@@ -73,7 +73,8 @@ export default function Cart() {
       date: new Date().toISOString(),
       items: cartItems.map(({ id, name, quantity, price }) => ({ id, name, quantity, price })),
       total: total,
-      status: "Procesando - Preparando Envío"
+      status: "Procesando - Preparando Envío",
+      saleID: "PLACEHOLDERUNIQUEID"
     };
 
     localStorage.setItem(RECEIPT_KEY, JSON.stringify(receipt));

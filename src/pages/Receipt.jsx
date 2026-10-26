@@ -15,6 +15,7 @@ export default function Receipt() {
   useEffect(() => {
     const raw = localStorage.getItem(RECEIPT_KEY);
     if (raw) {
+      console.log(JSON.parse(raw))
       setReceipt(JSON.parse(raw));
     }
   }, []);
