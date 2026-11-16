@@ -1,88 +1,68 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
-const RECEIPT_KEY = 'pieca_receipt';
-const priceFormatter = new Intl.NumberFormat('es-CL', {
-  style: 'currency',
-  currency: 'CLP',
-});
+import StatusBadge from '../components/StatusBadge';
+import { apiFetch, clp } from '../lib/api';
 
 export default function Receipt() {
+  const { id } = useParams();
   const [receipt, setReceipt] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const raw = localStorage.getItem(RECEIPT_KEY);
-    if (raw) {
-      try {
-        console.log(JSON.parse(raw));
-        setReceipt(JSON.parse(raw));
-      } catch {
-        setReceipt(null);
-      }
-    }
-  }, []);
-
-  if (!receipt) {
-    return (
-      <>
-        <Header />
-        <main className="flex-grow-1 d-flex justify-content-center align-items-center min-vh-100">
-          <div className="text-center text-black">
-            <h2>No hay pedidos recientes.</h2>
-            <Link to="/" className="btn btn-dark mt-3">Volver al Inicio</Link>
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
+    let alive = true;
+    apiFetch(`/api/orders/${id}`)
+      .then((data) => { if (alive) setReceipt(data); })
+      .catch((e) => { if (alive) setError(e.message); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [id]);
 
   return (
-    <>
+    <div className="app-container">
       <Header />
-      <main className="flex-grow-1 container py-5">
-        <div className="row justify-content-center">
-          <div className="col-lg-6">
-            <div className="bg-black text-white rounded-4 p-5 text-center shadow-lg">
-              <div className="mb-4">
-                <i className="bi bi-check-circle-fill text-success fs-1"></i>
-                <h2 className="text-success mt-2">¡Pedido Confirmado!</h2>
-              </div>
-              
-              <p className="fs-5">Estado: <span className="fw-bold">{receipt.status}</span></p>
-              <p className="text-secondary">Fecha: {new Date(receipt.date).toLocaleString()}</p>
-              
-              <hr className="border-secondary my-4" />
-              
-              <div className="text-start mb-4">
-                <h4 className="mb-3">Resumen del Pedido:</h4>
-                {receipt.items.map((item, index) => (
-                  <div key={index} className="d-flex justify-content-between mb-2">
-                    <span>{item.name} (x{item.quantity})</span>
-                    <span>{priceFormatter.format(item.price * item.quantity)}</span>
-                  </div>
-                ))}
-                <hr className="border-secondary" />
-                <div className="d-flex justify-content-between fs-5 fw-bold">
-                  <span>Total Pagado:</span>
-                  <span className="text-warning">{priceFormatter.format(receipt.total)}</span>
-                </div>
-              </div>
+      <main className="container py-5 flex-grow-1">
+        {loading && <div className="page-center"><div className="pieca-spinner" /></div>}
+        {error && (
+          <div className="text-center py-5 text-black">
+            <div className="alert alert-danger text-black">{error}</div>
+            <Link className="btn btn-light" to="/orders">Ver mis pedidos</Link>
+          </div>
+        )}
+        {!loading && !error && receipt && (
+          <div className="accountBox mx-auto text-black">
+            <h1 className="mb-3 text-black">¡Pedido Confirmado!</h1>
+            <p className="mb-1 text-black">Boleta: <strong>BOL-{receipt.id}</strong></p>
+            <p className="mb-1 text-black">Estado: <StatusBadge status={receipt.status} /></p>
+            <p className='text-black'>Fecha: {new Date(receipt.orderdate).toLocaleString('es-CL')}</p>
 
-              <p className="small text-secondary mb-4">
-                El detalle del pedido ha sido guardado. Los productos llegarán pronto a su destino.
-              </p>
+            <h2 className="h5 mt-4 text-black">Resumen del Pedido:</h2>
+            <ul className="list-unstyled text-black">
+              {receipt.items.map((item) => (
+                <li key={item.id} className="d-flex justify-content-between py-1 text-black">
+                  <span className='text-black'>{item.rock?.name ?? 'Producto'} (x{item.quantity})</span>
+                  <span className='text-black'>{clp.format(item.subtotal)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="d-flex justify-content-between border-top border-secondary pt-2 text-black">
+              <strong>Total Pagado:</strong>
+              <strong>{clp.format(receipt.total)}</strong>
+            </div>
 
-              <Link to="/" className="btn btn-light rounded-pill fw-bold px-4">
-                Volver al Inicio
-              </Link>
+            <p className="text-secondary mt-3 text-black">
+              El detalle del pedido ha sido guardado en tu cuenta. Puedes seguir su estado en "Mis Pedidos".
+            </p>
+            <div className="d-flex gap-2 mt-3">
+              <Link className="btn btn-light" to="/">Volver al Inicio</Link>
+              <Link className="btn btn-outline-light" to="/orders">Mis Pedidos</Link>
             </div>
           </div>
-        </div>
+        )}
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

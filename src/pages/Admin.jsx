@@ -1,55 +1,58 @@
-import { useState, useEffect } from 'react';
-import rocksData from '../data/rocks.json';
-import { getStoredCustomRocks, getDeletedRockNames } from '../lib/adminData';
+import { useCallback, useEffect, useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import RocksTable from '../components/admin/RocksTable';
-import AddRockForm from '../components/admin/AddRockForm';
+import RockForm from '../components/admin/RockForm';
 import UsersTable from '../components/admin/UsersTable';
 import SalesTable from '../components/admin/SalesTable';
+import { apiFetch } from '../lib/api';
+import { useAuth } from '../lib/auth.jsx';
 
 export default function Admin() {
+  const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('rocks');
-  const [allRocks, setAllRocks] = useState([]);
+  const [rocks, setRocks] = useState([]);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const customRocks = getStoredCustomRocks();
-    const deletedNames = new Set(getDeletedRockNames());
-    const baseMerged = [...rocksData, ...customRocks];
-    const filtered = baseMerged.filter(rock => !deletedNames.has(rock.name));
-    setAllRocks(filtered);
+  const tabs = isAdmin
+    ? [['rocks', 'Inventario'], ['add', 'Añadir Roca'], ['users', 'Usuarios'], ['sales', 'Ventas']]
+    : [['rocks', 'Inventario'], ['sales', 'Ventas']]; // SELLER: inventario de solo lectura + ventas
+
+  const loadRocks = useCallback(() => {
+    apiFetch('/api/rocks', { auth: false })
+      .then(setRocks)
+      .catch((e) => setError(e.message));
   }, []);
 
-  const handleRockAdded = (newRock) => {
-    setAllRocks([...allRocks, newRock]);
-  };
+  useEffect(loadRocks, [loadRocks]);
 
   return (
-    <>
+    <div className="app-container">
       <Header />
-      <main className="flex-grow-1 container py-5">
-        <h1 className="text-black mb-4 text-center">Panel de Administración</h1>
-        
-        <div className="d-flex justify-content-center gap-2 mb-4">
-          {['rocks', 'add', 'users', 'sales'].map(tab => (
-            <button
-              key={tab}
-              className={`btn ${activeTab === tab ? 'btn-light' : 'btn-outline-light'} rounded-pill px-4`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === 'rocks' ? 'Inventario' : tab === 'add' ? 'Añadir Roca' : tab === 'users' ? 'Usuarios' : 'Ventas'}
+      <main className="container-fluid px-4 py-5 flex-grow-1">
+        <h1 className="mb-4">Panel de Administración</h1>
+        {error && <div className="alert alert-danger">{error}</div>}
+
+        <div className="mb-4 d-flex gap-2 flex-wrap">
+          {tabs.map(([key, label]) => (
+            <button key={key}
+                    className={`btn ${activeTab === key ? 'btn-light' : 'btn-outline-light'}`}
+                    onClick={() => setActiveTab(key)}>
+              {label}
             </button>
           ))}
         </div>
 
-        <div className="bg-black rounded-4 p-4 min-vh-50">
-          {activeTab === 'rocks' && <RocksTable allRocks={allRocks} setAllRocks={setAllRocks} />}
-          {activeTab === 'add' && <AddRockForm onRockAdded={handleRockAdded} />}
-          {activeTab === 'users' && <UsersTable />}
-          {activeTab === 'sales' && <SalesTable />}
-        </div>
+        {activeTab === 'rocks' && <RocksTable rocks={rocks} canEdit={isAdmin} onChanged={loadRocks} />}
+        {activeTab === 'add' && isAdmin && (
+          <div className="accountBox">
+            <RockForm onSaved={() => { loadRocks(); setActiveTab('rocks'); alert('¡Roca guardada exitosamente!'); }} />
+          </div>
+        )}
+        {activeTab === 'users' && isAdmin && <UsersTable />}
+        {activeTab === 'sales' && <SalesTable />}
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

@@ -1,27 +1,21 @@
 import { Link } from 'react-router';
+import { resolveImageUrl, clp } from '../lib/api';
 
-export default function RockCard({ item, index, cardState = 'active' }) {
+export default function RockCard({ item, cardState = 'active' }) {
+  const soldOut = item.stock != null && item.stock <= 0;
+
   return (
-    <div className={`card carousel-card h-100 ${cardState}`}>
-      <div className="card-body d-flex flex-column align-items-center justify-content-between p-3 text-center text-white h-100 overflow-hidden">
-        <h5 className="card-title m-0 fs-6">{item.name}</h5>
-
-        <div className="carousel-card-media my-3">
-          <img
-            src={item.imgdir}
-            alt={item.name}
-            className="carousel-card-img"
-          />
-        </div>
-
-        <div className="carousel-btn-wrapper mt-auto">
-          <Link
-            to={`/product?id=${index}`}
-            className="btn btn-light rounded-pill fw-bold px-4 py-1 carousel-visit-btn text-decoration-none"
-          >
-            Visitar
-          </Link>
-        </div>
+    <div className={`carousel-card d-flex flex-column ${cardState}`}>
+      <div className="carousel-card-media">
+        <img className="carousel-card-img" src={resolveImageUrl(item.imgdir)} alt={item.name} loading="lazy" />
+      </div>
+      <div className="text-center px-2">
+        <div className="text-truncate fw-bold">{item.name}</div>
+        <small>{clp.format(item.price)}</small>
+        {soldOut && <div><span className="status-badge status-cancelled">Agotado</span></div>}
+      </div>
+      <div className="carousel-btn-wrapper">
+        <Link className="btn btn-sm carousel-visit-btn" to={`/product/${item.id}`}>Visitar</Link>
       </div>
     </div>
   );

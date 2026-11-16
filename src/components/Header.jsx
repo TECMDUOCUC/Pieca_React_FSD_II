@@ -1,58 +1,65 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../lib/auth.jsx';
 
-const USER_KEY = 'pieca_user';
+const ROLE_LABEL = { ROLE_ADMIN: 'ADMIN', ROLE_SELLER: 'VENDEDOR', ROLE_CLIENT: 'CLIENTE' };
 
 export default function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, isStaff, logout } = useAuth();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    // Check login status on mount and listen for storage changes
-    const checkUser = () => {
-      setIsLoggedIn(!!localStorage.getItem(USER_KEY));
-    };
-
-    checkUser();
-    window.addEventListener('storage', checkUser);
-    
-    // Cleanup listener
-    return () => window.removeEventListener('storage', checkUser);
-  }, []);
+  const close = () => setOpen(false);
 
   const handleLogout = () => {
-    localStorage.removeItem(USER_KEY);
-    setIsLoggedIn(false);
+    close();
+    logout();
     navigate('/');
   };
 
   return (
-    <header className="bg-black text-white py-2 px-4 mt-auto d-flex justify-content-between align-items-center py-2">
-      <Link to="/" className="text-white text-decoration-none h3"><b>Pieca&reg;</b></Link>
-      
-      <p className="m-0 d-none d-md-block">&copy; 2026 Pieca&reg;. Todos los derechos reservados.</p>
+    <header className="pieca-header">
+      <div className="pieca-nav">
+        <Link className="pieca-brand" to="/" onClick={close}>Pieca®</Link>
 
-      <div className='row text-align-right'>
-        {!isLoggedIn ? (
-          // Layout for Non-Logged In Users
-          <>
-            <Link to="/register" className="text-white text-decoration-none">Registrarse</Link>
-            <Link to="/login" className="text-white text-decoration-none">Iniciar Sesión</Link>
-          </>
-        ) : (
-          // Layout for Logged In Users
-          <>
-            <Link to="/catalog" className="text-white text-decoration-none">Catálogo</Link>
-            <Link to="/cart" className="text-white text-decoration-none">Carrito</Link>
-            <Link to="/admin" className="text-white text-decoration-none">Admin</Link>
-            <button 
-              onClick={handleLogout} 
-              className="light-button text-align-right"
-            >
-              Cerrar Sesión
-            </button>
-          </>
-        )}
+        {/* Botón hamburguesa 100% propio: mismo look en todos los navegadores */}
+        <button
+          type="button"
+          className={`pieca-burger ${open ? 'is-open' : ''}`}
+          aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span /><span /><span />
+        </button>
+
+        <nav className={`pieca-menu ${open ? 'is-open' : ''}`}>
+          <Link className="pieca-link" to="/catalog" onClick={close}>Catálogo</Link>
+          <Link className="pieca-link" to="/blogs" onClick={close}>Blog</Link>
+          <Link className="pieca-link" to="/contact" onClick={close}>Contáctanos</Link>
+
+          {!user ? (
+            <>
+              <Link className="pieca-link" to="/register" onClick={close}>Registrarse</Link>
+              <Link className="btn btn-light btn-sm" to="/login" onClick={close}>Iniciar Sesión</Link>
+            </>
+          ) : (
+            <>
+              <Link className="pieca-link" to="/cart" onClick={close}>Carrito</Link>
+              <Link className="pieca-link" to="/orders" onClick={close}>Mis Pedidos</Link>
+              {isStaff && (
+                <Link className="pieca-link" to="/admin" onClick={close}>Panel</Link>
+              )}
+              <span className="pieca-user">
+                {user.name}
+                <span className="role-chip">{ROLE_LABEL[user.role] ?? 'CLIENTE'}</span>
+              </span>
+              <button type="button" className="btn btn-outline-light btn-sm" onClick={handleLogout}>
+                Cerrar Sesión
+              </button>
+            </>
+          )}
+        </nav>
       </div>
     </header>
   );

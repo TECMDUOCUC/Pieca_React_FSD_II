@@ -170,7 +170,6 @@ describe('Pruebas de renderizado de Detalle de Producto usando datos JSON', () =
     const cart = JSON.parse(localStorage.getItem('pieca_cart'));
     expect(cart[0].quantity).toBe(2);
   });
-
 });
 
 

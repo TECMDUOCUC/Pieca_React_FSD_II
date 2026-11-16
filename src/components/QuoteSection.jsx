@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { resolveImageUrl } from '../lib/api';
 
 const phrases = [
   "El que esté libre de pecado, que tire la primera...",
@@ -10,30 +11,22 @@ const phrases = [
   "Tranquilo, que nunca se tropieza dos veces con la misma..."
 ];
 
-export default function QuoteSection({items}) {
+export default function QuoteSection({ items }) {
   const [quote, setQuote] = useState('');
   const [stonedImage, setStonedImage] = useState('');
 
   useEffect(() => {
     if (items && items.length > 0) {
       setQuote(phrases[Math.floor(Math.random() * phrases.length)]);
-      const randomItem = items[Math.floor(Math.random() * items.length)];
-      setStonedImage(randomItem.imgdir);
+      setStonedImage(items[Math.floor(Math.random() * items.length)].imgdir);
     }
   }, [items]);
+
   return (
-    <section className="background-section text-center py-5">
-      <div id="quote" className="mb-4 display-4 fade-in">
-        {quote}
-      </div>
+    <section className="background-section">
+      <p id="quote" className="fade-in">{quote}</p>
       {stonedImage && (
-        <img 
-          id="stoned" 
-          src={stonedImage} 
-          alt="Stone" 
-          className="img-fluid fade-in"
-          style={{ width: '20%', maxWidth: '300px' }}
-        />
+        <img id="stoned" src={resolveImageUrl(stonedImage)} alt="Una piedra" className="fade-in w-25" />
       )}
     </section>
   );

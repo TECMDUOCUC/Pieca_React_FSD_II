@@ -1,42 +1,65 @@
-import { MOCK_USERS } from '../../lib/adminData';
+import { useEffect, useState } from 'react';
+import { apiFetch } from '../../lib/api';
+import { useAuth } from '../../lib/auth.jsx';
+
+const ROLES = ['ROLE_ADMIN', 'ROLE_SELLER', 'ROLE_CLIENT'];
 
 export default function UsersTable() {
-  const storedUser = localStorage.getItem('pieca_user');
-  let usersList = [...MOCK_USERS];
+  const { user: me } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  if (storedUser) {
+  const load = () => {
+    setLoading(true);
+    apiFetch('/api/admin/users')
+      .then(setUsers)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(load, []);
+
+  const changeRole = async (user, role) => {
+    setError('');
     try {
-      const parsed = JSON.parse(storedUser);
-      if (parsed.email && !usersList.some(u => u.email === parsed.email)) {
-        usersList.unshift({
-          rut: parsed.rut || "Sin RUT",
-          name: parsed.name || "Usuario Activo",
-          username: parsed.username || "usuario_demo",
-          email: parsed.email,
-          role: "Cliente"
-        });
-      }
-    } catch (e) { console.error(e); }
-  }
+      await apiFetch(`/api/admin/users/${user.id}/role`, { method: 'PUT', body: { role } });
+      load();
+    } catch (e) {
+      setError(e.message);
+      load(); // revierte el select visualmente
+    }
+  };
 
   return (
-    <div className="table-responsive">
-      <table className="table table-dark table-striped">
-        <thead>
-          <tr><th>RUT</th><th>Nombre Completo</th><th>Usuario</th><th>Email</th><th>Rol</th></tr>
-        </thead>
-        <tbody>
-          {usersList.map((user, i) => (
-            <tr key={i}>
-              <td><code>{user.rut}</code></td>
-              <td>{user.name}</td>
-              <td>@{user.username}</td>
-              <td>{user.email}</td>
-              <td><span className={`badge ${user.role === 'Administrador' ? 'bg-success' : 'bg-warning text-dark'}`}>{user.role}</span></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div>
+      {error && <div className="alert alert-danger">{error}</div>}
+      {loading ? <div className="page-center"><div className="pieca-spinner" /></div> : (
+        <div className="table-responsive">
+          <table className="table table-dark align-middle">
+            <thead>
+              <tr><th>ID</th><th>RUT</th><th>Nombre</th><th>Email</th><th>Rol</th></tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>#{u.id}</td>
+                  <td>{u.rut ?? 'Sin RUT'}</td>
+                  <td>{u.name}{u.email === me?.email && ' (tú)'}</td>
+                  <td>{u.email}</td>
+                  <td>
+                    <select className="form-select form-select-sm role-select" value={u.role?.name ?? u.role}
+                            disabled={u.email === me?.email}
+                            onChange={(e) => changeRole(u, e.target.value)}>
+                      {ROLES.map((r) => <option key={r} value={r}>{r.replace('ROLE_', '')}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

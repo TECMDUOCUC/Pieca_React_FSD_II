@@ -1,62 +1,67 @@
-import { getStoredCustomRocks, getDeletedRockNames, saveCustomRocks, saveDeletedRockNames } from '../../lib/adminData';
+import { useState } from 'react';
+import { apiFetch, resolveImageUrl, clp } from '../../lib/api';
+import RockForm from './RockForm';
 
-export default function RocksTable({ allRocks, setAllRocks }) {
-  const handleDelete = (index) => {
-    const targetRock = allRocks[index];
-    if (!targetRock) return;
+export default function RocksTable({ rocks, canEdit, onChanged }) {
+  const [editing, setEditing] = useState(null);
+  const [error, setError] = useState('');
 
-    if (window.confirm(`¿Está seguro de que desea eliminar la roca "${targetRock.name}"?`)) {
-      // Check if it's a custom rock or a default one
-      const customRocks = getStoredCustomRocks();
-      const isCustom = customRocks.some(r => r.name === targetRock.name);
-
-      if (isCustom) {
-        const updatedCustom = customRocks.filter(r => r.name !== targetRock.name);
-        saveCustomRocks(updatedCustom);
-      } else {
-        const deletedNames = getDeletedRockNames();
-        deletedNames.push(targetRock.name);
-        saveDeletedRockNames(deletedNames);
-      }
-
-      // Update local state
-      const newRocks = [...allRocks];
-      newRocks.splice(index, 1);
-      setAllRocks(newRocks);
+  const handleDelete = async (rock) => {
+    if (!window.confirm(`¿Está seguro de que desea eliminar la roca "${rock.name}"?`)) return;
+    setError('');
+    try {
+      await apiFetch(`/api/rocks/${rock.id}`, { method: 'DELETE' });
+      onChanged();
+    } catch (e) {
+      setError(e.message);
     }
   };
 
-  const priceFormatter = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' });
-
   return (
-    <div className="table-responsive">
-      <table className="table table-dark table-striped">
-        <thead>
-          <tr>
-            <th>ID</th><th>Vista</th><th>Nombre</th><th>Precio</th><th>Peso (g)</th><th>Dimensiones</th><th>Volumen</th><th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {allRocks.length === 0 ? (
-            <tr><td colSpan="8" className="text-center text-muted">No hay rocas disponibles.</td></tr>
-          ) : (
-            allRocks.map((rock, index) => (
-              <tr key={`${rock.name}-${index}`}>
-                <td><code>#{index}</code></td>
-                <td><img src={rock.imgdir} alt={rock.name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} /></td>
-                <td><strong>{rock.name}</strong></td>
-                <td>{priceFormatter.format(rock.price)}</td>
-                <td>{rock.weight} g</td>
-                <td>{rock.height} × {rock.width} × {rock.length} mm</td>
-                <td>{rock.volume} mm³</td>
-                <td>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(index)}>Eliminar</button>
-                </td>
+    <div>
+      {error && <div className="alert alert-danger">{error}</div>}
+      <div className="table-responsive">
+        <table className="table table-dark align-middle">
+          <thead>
+            <tr>
+              <th>ID</th><th>Vista</th><th>Nombre</th><th>Precio</th><th>Stock</th>
+              <th>Peso (g)</th><th>Dimensiones</th><th>Volumen</th>
+              {canEdit && <th>Acciones</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rocks.length === 0 ? (
+              <tr><td colSpan={canEdit ? 9 : 8}>No hay rocas disponibles.</td></tr>
+            ) : rocks.map((rock) => (
+              <tr key={rock.id}>
+                <td>#{rock.id}</td>
+                <td><img className="admin-thumb" src={resolveImageUrl(rock.imgdir)} alt={rock.name} /></td>
+                <td>{rock.name}</td>
+                <td>{clp.format(rock.price)}</td>
+                <td>{rock.stock <= 0 ? <span className="status-badge status-cancelled">Agotado</span> : rock.stock}</td>
+                <td>{rock.weight ?? '—'} g</td>
+                <td>{rock.height ?? '—'} × {rock.width ?? '—'} × {rock.length ?? '—'} mm</td>
+                <td>{rock.volume ?? '—'} mm³</td>
+                {canEdit && (
+                  <td>
+                    <button className="btn btn-outline-light btn-sm me-2" onClick={() => setEditing(rock)}>Editar</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(rock)}>Eliminar</button>
+                  </td>
+                )}
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && (
+        <div className="crop-modal">
+          <div className="crop-dialog crop-dialog-wide">
+            <RockForm initial={editing} onSaved={() => { setEditing(null); onChanged(); }} />
+            <button className="btn btn-link text-secondary mt-2" onClick={() => setEditing(null)}>Cerrar sin guardar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

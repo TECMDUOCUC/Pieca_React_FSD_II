@@ -1,155 +1,119 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router';
-import rocksData from '../data/rocks.json';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
-const CART_KEY = 'pieca_cart';
-const USER_KEY = 'pieca_user';
-
-const priceFormatter = new Intl.NumberFormat('es-CL', {
-  style: 'currency',
-  currency: 'CLP',
-});
-
-const emptyData = {
-  name: 'Not Found',
-  price: 'N/A',
-  'shipping-fee': 'N/A',
-  weight: 'N/A',
-  height: 'N/A',
-  width: 'N/A',
-  length: 'N/A',
-  volume: 'N/A',
-  imgdir: 'assets/attachment.gif',
-};
-
-function getCart() {
-  try {
-    const raw = localStorage.getItem(CART_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCart(cart) {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
+import { apiFetch, resolveImageUrl, clp } from '../lib/api';
+import { addToCart } from '../lib/cart';
+import { useAuth } from '../lib/auth.jsx';
 
 export default function ProductDetail() {
-  const [searchParams] = useSearchParams();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [rock, setRock] = useState(null);
-  const [addedFeedback, setAddedFeedback] = useState('');
+  const { user } = useAuth();
 
-  const id = parseInt(searchParams.get('id'), 10);
+  const [rock, setRock] = useState(null);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
-    if (!isNaN(id) && id >= 0 && id < rocksData.length) {
-      setRock(rocksData[id]);
-    } else {
-      setRock(emptyData);
-    }
+    let alive = true;
+    setRock(null); setNotFound(false); setError('');
+    apiFetch(`/api/rocks/${id}`, { auth: false })
+      .then((data) => { if (alive) setRock(data); })
+      .catch((e) => {
+        if (!alive) return;
+        if (e.status === 404) setNotFound(true);
+        else setError(e.message);
+      });
+    return () => { alive = false; };
   }, [id]);
 
   const handleAddToCart = () => {
-    const user = localStorage.getItem(USER_KEY);
     if (!user) {
       alert('Debe iniciar sesión para añadir productos al carrito.');
       navigate('/login');
       return;
     }
-
-    if (isNaN(id) || id < 0 || id >= rocksData.length) {
-      /* istanbul ignore next */
-      alert('Error! ID Inexistente');
-      return;
-    }
-
-    const cart = getCart();
-    const existing = cart.find((entry) => entry.id === id);
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ id, quantity: 1 });
-    }
-    saveCart(cart);
-    setAddedFeedback('¡Añadido al carrito!');
-    setTimeout(() => setAddedFeedback(''), 2000);
+    addToCart(rock.id, quantity);
+    setFeedback('¡Añadido al carrito!');
+    setTimeout(() => setFeedback(''), 2000);
   };
 
-  if (!rock) {
+  if (error) {
     return (
-      <>
-        <Header />
-        <main className="flex-grow-1 d-flex justify-content-center align-items-center min-vh-100">
-          <div className="spinner-border text-dark" role="status">
-            <span className="visually-hidden">Cargando...</span>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <div className="app-container"><Header />
+        <main className="container py-5"><div className="alert alert-danger">{error}</div></main>
+        <Footer /></div>
     );
   }
 
-  const formatPrice = (value) => {
-    const numeric = Number(value);
-    return isNaN(numeric) ? 'N/A' : priceFormatter.format(numeric);
-  };
+  if (notFound) {
+    return (
+      <div className="app-container"><Header />
+        <main className="container py-5 text-center text-black">
+          <h1>Not Found</h1>
+          <p>Esta roca no existe (o fue eliminada del catálogo).</p>
+        </main>
+        <Footer /></div>
+    );
+  }
 
+  if (!rock) {
+    return (
+      <div className="app-container"><Header />
+        <main className="page-center flex-grow-1"><div className="pieca-spinner" /></main>
+        <Footer /></div>
+    );
+  }
+
+  const soldOut = rock.stock <= 0;
   const specs = [
-    { label: 'Peso', value: `${rock.weight} g` },
-    { label: 'Altura', value: `${rock.height} mm` },
-    { label: 'Anchura', value: `${rock.width} mm` },
-    { label: 'Longitud', value: `${rock.length} mm` },
-    { label: 'Volumen', value: `${rock.volume} mm³` },
-    { label: 'Costo de envío', value: formatPrice(rock['shipping-fee']) },
+    { label: 'Peso', value: `${rock.weight ?? 'N/A'} g` },
+    { label: 'Altura', value: `${rock.height ?? 'N/A'} mm` },
+    { label: 'Anchura', value: `${rock.width ?? 'N/A'} mm` },
+    { label: 'Longitud', value: `${rock.length ?? 'N/A'} mm` },
+    { label: 'Volumen', value: `${rock.volume ?? 'N/A'} mm³` },
+    { label: 'Stock disponible', value: rock.stock },
   ];
 
   return (
-    <>
+    <div className="app-container">
       <Header />
-      <main className="flex-grow-1 container py-5">
-        <div className="productAlign">
-            <div className="productSquare">
-                <img
-                    src={rock.imgdir}
-                    alt={rock.name}
-                />
-            </div>
+      <main className="container py-5 flex-grow-1">
+        <div className="productAlign flex-wrap">
+          <div className="productSquare">
+            <img src={resolveImageUrl(rock.imgdir)} alt={rock.name} />
+          </div>
+          <div className="productDetails">
+            <h1 className='text-black'>{rock.name}</h1>
+            <h2 className="mb-4 text-black">{clp.format(rock.price)}</h2>
+            <table className="table table-dark">
+              <tbody>
+                {specs.map((spec) => (
+                  <tr key={spec.label}><td>{spec.label}</td><td>{spec.value}</td></tr>
+                ))}
+              </tbody>
+            </table>
 
-            <div className="text-black">
-                <h1 className="mb-3 fw-bold">{rock.name}</h1>
-                <h2 className="mb-4 text-dark fw-semibold">{formatPrice(rock.price)}</h2>
+            {!soldOut && (
+              <div className="d-flex align-items-center gap-3 mb-3">
+                <label htmlFor="qty" className="form-label mb-0 text-black">Cantidad:</label>
+                <input id="qty" type="number" className="form-control qty-input" min={1} max={rock.stock}
+                       value={quantity}
+                       onChange={(e) => setQuantity(Math.max(1, Math.min(rock.stock, Number(e.target.value) || 1)))} />
+              </div>
+            )}
 
-                <table className="table table-bordered table-striped mb-4">
-                <tbody>
-                    {specs.map((spec) => (
-                    <tr key={spec.label}>
-                        <th className="ps-3 bg-light" style={{ width: '40%' }}>{spec.label}</th>
-                        <td>{spec.value}</td>
-                    </tr>
-                    ))}
-                </tbody>
-                </table>
-
-                <div className="text-center mt-4">
-                <button
-                    className="btn btn-dark rounded-pill fw-bold px-5 py-2 fs-5"
-                    onClick={handleAddToCart}
-                    disabled={rock.name === 'Not Found'}
-                >
-                    Añadir a carrito
-                </button>
-                {addedFeedback && (
-                    <p className="text-success fw-bold mt-3 fade-in">{addedFeedback}</p>
-                )}
-                </div>
-            </div>
+            <button className="btn btn-light px-4" onClick={handleAddToCart} disabled={soldOut}>
+              {soldOut ? 'Agotado' : 'Añadir a carrito'}
+            </button>
+            {feedback && <div className="alert alert-success mt-3 py-2">{feedback}</div>}
+          </div>
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

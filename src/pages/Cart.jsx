@@ -1,153 +1,132 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import rocksData from '../data/rocks.json';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
-const CART_KEY = 'pieca_cart';
-const RECEIPT_KEY = 'pieca_receipt';
-
-const priceFormatter = new Intl.NumberFormat('es-CL', {
-  style: 'currency',
-  currency: 'CLP',
-});
-
-function getCart() {
-  try {
-    const raw = localStorage.getItem(CART_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCart(cart) {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-}
+import { apiFetch, clp } from '../lib/api';
+import { getCart, setQuantity, clearCart } from '../lib/cart';
 
 export default function Cart() {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const cart = getCart();
-    // Enrich cart with product data from rocks.json
-    const enriched = cart.map(item => {
-      const product = rocksData[item.id];
-      return product ? { ...product, quantity: item.quantity, id: item.id } : null;
-    }).filter(Boolean);
-    
-    setCartItems(enriched);
-    
-    // Calculate total
-    const newTotal = enriched.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    setTotal(newTotal);
+    let alive = true;
+    (async () => {
+      try {
+        const rocks = await apiFetch('/api/rocks', { auth: false });
+        const byId = new Map(rocks.map((r) => [r.id, r]));
+        const enriched = getCart()
+          .map((item) => {
+            const product = byId.get(item.id);
+            return product ? { ...product, quantity: item.quantity } : null;
+          })
+          .filter(Boolean);
+        if (alive) setCartItems(enriched);
+      } catch (e) {
+        if (alive) setError(e.message);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
   }, []);
 
-  const updateQuantity = (id, amount) => {
-    const updatedCart = cartItems.map(item => {
-      if (item.id === id) {
-        return { ...item, quantity: Math.max(0, item.quantity + amount) };
-      }
-      return item;
-    }).filter(item => item.quantity > 0);
+  const total = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    // Update local state and localStorage
-    const storageCart = updatedCart.map(({ id, quantity }) => ({ id, quantity }));
-    saveCart(storageCart);
-    setCartItems(updatedCart);
-    
-    const newTotal = updatedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    setTotal(newTotal);
+  const updateQuantity = (id, amount) => {
+    const item = cartItems.find((i) => i.id === id);
+    if (!item) return;
+    const next = Math.max(0, Math.min(item.stock, item.quantity + amount));
+    setQuantity(id, next);
+    setCartItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: next } : i)).filter((i) => i.quantity > 0));
   };
 
   const removeItem = (id) => {
-    updateQuantity(id, -1000); // Effectively removes it
+    setQuantity(id, 0);
+    setCartItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const handleCheckout = () => {
-    /* istanbul ignore next */
-    if (cartItems.length === 0) return;
-
-    const receipt = {
-      date: new Date().toISOString(),
-      items: cartItems.map(({ id, name, quantity, price }) => ({ id, name, quantity, price })),
-      total: total,
-      status: "Procesando - Preparando Envío",
-      saleID: "PLACEHOLDERUNIQUEID"
-    };
-
-    localStorage.setItem(RECEIPT_KEY, JSON.stringify(receipt));
-    localStorage.removeItem(CART_KEY);
-    
-    // Refresh cart state to empty before navigating
-    setCartItems([]);
-    setTotal(0);
-    
-    navigate('/receipt');
+  const handleCheckout = async () => {
+    if (cartItems.length === 0 || processing) return;
+    setProcessing(true);
+    setError('');
+    try {
+      // El backend simula ~5 s de procesamiento de pago. Timeout amplio (20 s).
+      const order = await apiFetch('/api/orders', {
+        method: 'POST',
+        body: { items: cartItems.map((i) => ({ rockId: i.id, quantity: i.quantity })) },
+        timeout: 20000,
+      });
+      clearCart();
+      navigate(`/receipt/${order.id}`);
+    } catch (e) {
+      // Wifi cortado, timeout, stock insuficiente, sesión expirada... todo cae aquí.
+      setError(`La compra falló: ${e.message}`);
+      setProcessing(false);
+    }
   };
 
   return (
-    <>
+    <div className="app-container">
       <Header />
-      <main className="flex-grow-1 container py-5">
-        <h1 className="text-black mb-4 text-center">Carrito de Compras</h1>
+      <main className="container py-5 flex-grow-1 text-black">
+        <h1 className="mb-4">Carrito de Compras</h1>
 
-        {cartItems.length === 0 ? (
-          <div className="text-center py-5 bg-black rounded-4 text-white">
-            <p className="fs-4">El carrito está vacío.</p>
-            <button 
-              className="btn btn-light mt-3" 
-              onClick={() => navigate('/catalog')}
-            >
-              Volver al Catálogo
-            </button>
+        {error && <div className="alert alert-danger">{error}</div>}
+        {loading && <div className="page-center"><div className="pieca-spinner" /></div>}
+
+        {!loading && cartItems.length === 0 ? (
+          <div className="text-center py-5">
+            <p>El carrito está vacío.</p>
+            <button className="btn btn-light" onClick={() => navigate('/catalog')}>Volver al Catálogo</button>
           </div>
         ) : (
-          <div className="row justify-content-center">
-            <div className="col-lg-8">
-              <div className="bg-black rounded-4 p-4 text-white">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="d-flex justify-content-between align-items-center border-bottom border-secondary py-3">
-                    <div className="d-flex align-items-center gap-3">
-                      <img src={item.imgdir} alt={item.name} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
-                      <div>
-                        <h5 className="m-0">{item.name}</h5>
-                        <small className="text-secondary">{priceFormatter.format(item.price)} c/u</small>
-                      </div>
-                    </div>
-                    
-                    <div className="d-flex align-items-center gap-3">
-                      <div className="btn-group">
-                        <button className="btn btn-sm btn-outline-light" onClick={() => updateQuantity(item.id, -1)}>-</button>
-                        <span className="btn btn-sm btn-dark disabled text-white">{item.quantity}</span>
-                        <button className="btn btn-sm btn-outline-light" onClick={() => updateQuantity(item.id, 1)}>+</button>
-                      </div>
-                      <button className="btn btn-sm btn-link text-danger text-decoration-none" onClick={() => removeItem(item.id)}>Eliminar</button>
-                    </div>
+          !loading && (
+            <div className="accountBox mx-auto ">
+              {cartItems.map((item) => (
+                <div key={item.id} className="cart-row d-flex justify-content-between align-items-center py-3 text-black">
+                  <div>
+                    <strong>{item.name}</strong>
+                    <div><small>{clp.format(item.price)} c/u</small></div>
                   </div>
-                ))}
-
-                <div className="mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center">
-                  <h3>Total:</h3>
-                  <h2 className="text-warning">{priceFormatter.format(total)}</h2>
+                  <div className="d-flex align-items-center gap-2 text-black">
+                    <button className="btn btn-outline-light btn-sm" disabled={processing}
+                            onClick={() => updateQuantity(item.id, -1)}>-</button>
+                    <span>{item.quantity}</span>
+                    <button className="btn btn-outline-light btn-sm" disabled={processing || item.quantity >= item.stock}
+                            onClick={() => updateQuantity(item.id, 1)}>+</button>
+                    <button className="btn btn-link text-danger btn-sm" disabled={processing}
+                            onClick={() => removeItem(item.id)}>Eliminar</button>
+                  </div>
                 </div>
+              ))}
 
-                <div className="text-center mt-4">
-                  <button 
-                    className="btn btn-light fw-bold px-5 py-2 rounded-pill"
-                    onClick={handleCheckout}
-                  >
-                    Proceder al Pago
-                  </button>
-                </div>
+              <div className="d-flex justify-content-between align-items-center py-3 border-top border-secondary text-black">
+                <strong>Total:</strong>
+                <strong>{clp.format(total)}</strong>
+              </div>
+
+              <div className="text-center mt-3">
+                <button className="btn btn-light px-5" onClick={handleCheckout} disabled={processing}>
+                  {processing ? 'Procesando pago...' : 'Proceder al Pago'}
+                </button>
+                {processing && (
+                  <div className="mt-3 text-black">
+                    <div className="pieca-spinner mx-auto" />
+                    <p className="mt-2 text-secondary">
+                      Procesando el pago. No cierres esta ventana.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )
         )}
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

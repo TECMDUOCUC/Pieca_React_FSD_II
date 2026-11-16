@@ -1,223 +1,306 @@
+/* ===== Pieca: negro/blanco duro, sin depender del tema del sistema ===== */
+:root {
+  color-scheme: dark; /* controles nativos (inputs, scrollbars) SIEMPRE oscuros */
+}
+
+html, body, #root {
+  background-color: #000 !important;
+  color: #fff !important;
+  min-height: 100vh;
+  margin: 0;
+}
+
+#root { display: flex; flex-direction: column; }
+
 .app-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: rgb(220, 220, 220);
+  background-color: #ffffff;
+  color: #000000;
 }
 
-#root {
-  background-color: rgb(220, 220, 220);
-  min-height: 100vh;
-  margin: 0;
+a { color: #fff; }
+a:hover { color: #ccc; }
 
-  display: flex;
-  flex-direction: column;
+::selection { background: #fff; color: #000; }
+
+/* ============================================================
+   SISTEMA DE CONTRASTE: toda superficie CLARA lleva texto NEGRO.
+   Esto pisa los colores de Bootstrap 6 (variables incluidas).
+   ============================================================ */
+.btn-light,
+.btn-light:hover, .btn-light:focus, .btn-light:active, .btn-light.active,
+.btn-light:first-child:active, :not(.btn-check) + .btn-light:active,
+.btn-white, .bg-white, .bg-light,
+.alert-success, .alert-light,
+.badge.bg-light, .badge.bg-white,
+.card.bg-light, .card.bg-white,
+.list-group-item-light, .list-group-item.active {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #fff !important;
+  --bs-btn-color: #000;
+  --bs-btn-hover-color: #000;
+  --bs-btn-active-color: #000;
+  --bs-btn-disabled-color: #000;
+  --bs-alert-color: #000;
+  --bs-alert-link-color: #000;
 }
+
+/* Todo lo que va DENTRO de una superficie clara hereda negro */
+.btn-light *, .bg-white *, .bg-light *,
+.alert-success *, .alert-light *,
+.list-group-item.active * {
+  color: #000 !important;
+}
+
+.btn-light:hover { background-color: #ffffff !important; border-color: #000000 !important; color:black !important}
+.btn-light:disabled, .btn-light.disabled {
+  background-color: #151515 !important; border-color: #000000 !important; color: #f7f7f7 !important;
+}
+
+.text-secondary, .text-muted, small.text-secondary { color: #505050 !important; }
+.bg-white .text-secondary, .bg-white .text-muted,
+.bg-light .text-secondary, .bg-light .text-muted,
+.alert-success .text-secondary, .alert-light .text-secondary { color: #444 !important; }
+
+/* Utilidades explícitas B/N (por si las usas a mano) */
+.text-black { color: #000 !important; }
+.text-white { color: #fff !important; }
+.black { background-color: #000; }
+
+/* ---- Header: navbar 100% propia (sin JS de Bootstrap) ---- */
+.pieca-header {
+  background-color: #000;
+  border-bottom: 1px solid #333;
+  padding: 10px 20px;
+}
+.pieca-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+.pieca-brand {
+  font-weight: 700; font-size: 1.4rem;
+  color: #fff !important; text-decoration: none;
+}
+.pieca-menu { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pieca-link { color: #fff !important; text-decoration: none; }
+.pieca-link:hover { color: #aaa !important; }
+.pieca-user { display: inline-flex; align-items: center; gap: 8px; color: #fff; }
+
+.role-chip {
+  border: 1px solid #fff; border-radius: 999px;
+  padding: 1px 8px; font-size: 0.65rem; letter-spacing: 1px;
+  color: #fff; background: #000; white-space: nowrap;
+}
+
+/* Hamburguesa dibujada por nosotros: idéntica en Chrome, Brave, Firefox, Edge */
+.pieca-burger {
+  display: none;
+  appearance: none; -webkit-appearance: none;
+  background: #000; border: 1px solid #fff; border-radius: 8px;
+  width: 42px; height: 38px; padding: 9px 8px;
+  cursor: pointer;
+  flex-direction: column; justify-content: space-between;
+}
+.pieca-burger span {
+  display: block; height: 2px; width: 100%;
+  background: #fff; border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.pieca-burger.is-open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.pieca-burger.is-open span:nth-child(2) { opacity: 0; }
+.pieca-burger.is-open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+@media (max-width: 991px) {
+  .pieca-burger { display: flex; }
+  .pieca-menu {
+    display: none;
+    width: 100%;
+    flex-direction: column; align-items: flex-start;
+    padding: 12px 0 6px; gap: 12px;
+    border-top: 1px solid #333; margin-top: 8px;
+  }
+  .pieca-menu.is-open { display: flex; }
+}
+
+/* ---- Footer ---- */
 footer {
   margin-top: auto;
-  background-color: black;
-  height: 70px;
-  padding: 5px 20px;
-  margin: 0;
+  background-color: #000;
+  border-top: 1px solid #333;
+  color: #fff;
+  min-height: 70px;
+  padding: 10px 20px;
 }
+footer a { color: #fff; }
 
-header {
-  height: 120px;
-  padding: 5px 20px;
-  margin: 0;
+/* ---- Formularios: siempre negro/blanco ---- */
+.form-control, .form-select,
+.contact-form input, .contact-form textarea {
+  background-color: #000 !important;
+  border: 1px solid #555 !important;
+  color: #fff !important;
 }
-
-.background-section {
-  background-color: black;
-  color: white;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.black {
-  background-color: black;
-}
-
-#quote {
-  max-width: 35ch;
-  text-align: center;
-  letter-spacing: 2px;
-  font-size: 200%;
-}
-
-#stoned {
-  height: auto;
-}
-
-.contact-form input,
-.contact-form textarea {
-  background-color: #1a1a1a !important;
-  border: 1px solid #333 !important;
-  color: white !important;
-}
-
-.contact-form input:focus,
-.contact-form textarea:focus {
-  border-color: white !important;
+.form-control:focus, .form-select:focus,
+.contact-form input:focus, .contact-form textarea:focus {
+  border-color: #fff !important;
   box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
 }
+.form-control::placeholder { color: #777 !important; }
+.form-range { accent-color: #fff; }
+.qty-input { max-width: 100px; }
+.role-select { max-width: 140px; }
 
+/* ---- Botones outline ---- */
+.btn-outline-light { color: #fff !important; border-color: #fff !important; }
+.btn-outline-light:hover { background-color: #fff !important; color: #000 !important; }
+.btn-outline-light:hover * { color: #000 !important; }
+.light-button { background-color: transparent; border: none; color: #fff; }
 
-
-@media (max-width: 768px) {
-  #quote {
-    font-size: 150%;
-  }
-  
-  #stoned {
-    width: 40% !important;
-  }
+/* ---- Tablas (admin, pedidos, producto) ---- */
+.table {
+  --bs-table-bg: #000;
+  --bs-table-color: #fff;
+  --bs-table-border-color: #333;
+  --bs-table-striped-bg: #111;
+  --bs-table-striped-color: #fff;
 }
+.table-dark { background-color: #000 !important; color: #fff !important; }
+.table-dark td, .table-dark th { color: #fff !important; background-color: #000 !important; border-color: #333 !important; }
+.admin-thumb { width: 48px; height: 48px; object-fit: contain; background: #111; border-radius: 6px; }
 
-.fade-in {
-  opacity: 0;
-  animation: fadeIn 2.5s ease-in forwards;
-}
+/* ---- Alertas en clave B/N ---- */
+.alert-danger { background-color: #000 !important; color: #fff !important; border: 1px dashed #fff !important; }
+.alert-danger * { color: #fff !important; }
+/* .alert-success ya queda blanco/negro por el sistema de contraste de arriba */
 
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+/* ---- Badges de estado (formas, no colores) ---- */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid #fff;
+  color: #fff;
+  background: #000;
+  white-space: nowrap;
 }
+.status-delivered { background: #fff; color: #000; }
+.status-shipping { border-style: double; border-width: 3px; }
+.status-cancelled { border-color: #777; color: #777; text-decoration: line-through; }
+.status-failed { border-style: dashed; }
 
-.text-black {
-  color: black;
+/* ---- Spinner / centrado ---- */
+.page-center { display: flex; align-items: center; justify-content: center; padding: 3rem; }
+.pieca-spinner {
+  width: 2.5rem; height: 2.5rem;
+  border: 3px solid #333; border-top-color: #fff;
+  border-radius: 50%;
+  animation: pieca-spin 0.8s linear infinite;
 }
-.text-white {
-  color: white;
-}
+@keyframes pieca-spin { to { transform: rotate(360deg); } }
 
+/* ---- Secciones home ---- */
+.background-section {
+  background-color: #000; color: #fff;
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+#quote { max-width: 35ch; text-align: center; letter-spacing: 2px; font-size: 200%; }
+#stoned { height: auto; }
+.fade-in { opacity: 0; animation: fadeIn 2.5s ease-in forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Carrusel / tarjetas ---- */
 .carousel-card {
-  width: 250px;
-  height: 280px;
+  width: 250px; height: 300px;
   border-radius: 12px;
-  background-color: #1a1a1a;
+  background-color: #111;
+  border: 1px solid #333;
+  color: #fff;
   cursor: pointer;
-  border: none;
-  flex-shrink: 0;
-  overflow: hidden;
-  box-sizing: border-box;
+  flex-shrink: 0; overflow: hidden; box-sizing: border-box;
   transition: transform 0.5s ease, opacity 0.5s ease, background-color 0.5s ease;
 }
-
-.carousel-card.active {
-  transform: scale(1);
-  opacity: 1;
-  background-color: #2a2a2a;
-  z-index: 2;
-  pointer-events: auto;
-}
-
-.carousel-card.side {
-  transform: scale(0.8);
-  opacity: 0.4;
-  z-index: 1;
-  pointer-events: auto;
-}
-
-.carousel-card.far {
-  transform: scale(0.4);
-  opacity: 0.2;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.carousel-card-media {
-  flex: 1;
-  width: 100%;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.carousel-card-img {
-  max-width:75%;
-  max-height: 75%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
-
-.carousel-btn-wrapper {
-  width: 100%;
-  height: 25%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+.carousel-card.active { transform: scale(1); opacity: 1; background-color: #1a1a1a; z-index: 2; pointer-events: auto; }
+.carousel-card.side { transform: scale(0.8); opacity: 0.4; z-index: 1; pointer-events: auto; }
+.carousel-card.far { transform: scale(0.4); opacity: 0.2; z-index: 0; pointer-events: none; }
+.carousel-card-media { flex: 1; width: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.carousel-card-img { max-width: 75%; max-height: 75%; width: auto; height: auto; object-fit: contain; }
+.carousel-btn-wrapper { width: 100%; height: 25%; display: flex; align-items: center; justify-content: center; }
 .carousel-visit-btn {
-  opacity: 0;
-  visibility: hidden;
+  opacity: 0; visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
-  background-color: white;
-  color: black
+  background-color: #fff !important; color: #000 !important;
 }
+.carousel-card.active .carousel-visit-btn { opacity: 1; visibility: visible; }
 
-.carousel-card.active .carousel-visit-btn {
-  opacity: 1;
-  visibility: visible;
-}
-
-.blog {
-  width: 100%;
-  max-width: 700px;
+/* ---- Blog ---- */
+.blog { width: 100%; max-width: 700px; }
+.blog-card {
+  background-color: #111;
+  border: 1px solid #333;
   border-radius: 15px;
-  padding: 1.5%;
+  padding: 1.25rem 1.5rem;
+  color: #fff;
 }
-.text-align-right {
-  text-align: right;
-}
+.blog-card h2 { color: #fff; }
+.blog-date { color: #aaa; font-size: 0.85rem; }
+.blog-more { color: #fff; text-decoration: underline; }
+.blog-more:hover { color: #ccc; }
+.text-align-right { text-align: right; }
 
-
-.productDetails{
-    width: 40vw;
-}
-
-.productAlign {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-evenly;
-    padding: 20px 30px;
+/* ---- Contacto ---- */
+.contact-success {
+  border: 1px solid #fff; border-radius: 12px;
+  padding: 2rem; color: #fff;
 }
 
+/* ---- Producto ---- */
+.productDetails { width: 40vw; min-width: 300px; }
+.productAlign { display: flex; flex-direction: row; align-items: center; justify-content: space-evenly; padding: 20px 30px; gap: 2rem; }
 .productSquare {
-    background-color: black;
-    max-width: 30vw;
-    aspect-ratio: 1/1;
-    height: auto;
+  background-color: #111; border: 1px solid #333;
+  max-width: 30vw; min-width: 260px; aspect-ratio: 1/1; height: auto;
+  display: flex; justify-content: center; align-items: center; border-radius: 20px;
+}
+.productSquare img { width: 80%; height: auto; object-fit: contain; }
 
-    display: flex;
-    justify-content: center;
-    border-radius: 20px;
+/* ---- Cuentas / carrito ---- */
+.accountBox { max-width: 640px; width: 100%; color: #fff; }
+.cart-row { border-bottom: 1px solid #222; }
+
+/* ---- Admin: preview + modal de recorte ---- */
+.rock-preview {
+  width: 140px; height: 140px;
+  background: #111; border: 1px solid #555; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.rock-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.crop-modal {
+  position: fixed; inset: 0; z-index: 1050;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.crop-dialog {
+  background: #000; border: 1px solid #fff; border-radius: 12px;
+  padding: 1.5rem; width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto; color: #fff;
+}
+.crop-dialog-wide { max-width: 720px; }
+.crop-area { position: relative; width: 100%; height: 320px; background: #111; border-radius: 8px; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  #quote { font-size: 150%; }
+  #stoned { width: 40% !important; }
+  .productAlign { flex-direction: column; }
+  .productDetails, .productSquare { width: 100%; max-width: 100%; }
 }
 
-.productSquare img {
-    width: 80%;
-    height: auto;
-    object-fit: contain;
-}
-
-.accountBox{
-   max-width: 500px;
-   width: 100%;
-   color: white;
-}
-
-.light-button {
-  background-color: transparent;
-  border: none;
+label, h1, h2, h3, h4, p {
+  color: black;
 }
