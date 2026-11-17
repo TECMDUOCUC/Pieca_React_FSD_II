@@ -4,8 +4,9 @@ import { setToken, clearToken } from '../lib/api';
 
 /**
  * Instala un mock de window.fetch.
- * routes: [{ method?, match: string|RegExp|fn, status?, body?, delay? }]
- * Devuelve { calls, restore }.
+ * routes: [{ method?, match: string|RegExp|fn, status?, body?, delay?, networkError? }]
+ * Un match string calza SOLO si la ruta es idéntica, o si continúa con '/' o '?'.
+ * (Así '/api/admin/users' ya NO captura '/api/admin/users/2/role'.)
  */
 export function mockFetch(routes = []) {
   const original = window.fetch;
@@ -13,15 +14,20 @@ export function mockFetch(routes = []) {
 
   window.fetch = async (url, options = {}) => {
     const method = (options.method || 'GET').toUpperCase();
-    const path = String(url).replace('http://localhost:8080', '').replace('/api/v1/', '/api/');
+    const path = String(url)
+      .replace('http://localhost:8080', '')
+      .replace('/api/v1/', '/api/');
     calls.push({ url: String(url), path, method, options });
 
     const route = routes.find((r) => {
       const methodOk = !r.method || r.method.toUpperCase() === method;
-      const matchOk =
-        typeof r.match === 'function' ? r.match(path, options)
-        : r.match instanceof RegExp ? r.match.test(path)
-        : path === r.match || path.startsWith(r.match + '?');
+      let matchOk;
+      if (typeof r.match === 'function') matchOk = r.match(path, options);
+      else if (r.match instanceof RegExp) matchOk = r.match.test(path);
+      else matchOk =
+        path === r.match ||
+        path.startsWith(r.match + '/') ||
+        path.startsWith(r.match + '?');
       return methodOk && matchOk;
     });
 
@@ -44,7 +50,7 @@ export function mockFetch(routes = []) {
 }
 
 /** Envuelve un componente con sesión iniciada (token + /api/auth/me mockeado). */
-export function withAuth(ui, user, fetchMockRoutes = []) {
+export function withAuth(ui, user) {
   setToken('test-token');
   return React.createElement(AuthProvider, null, ui);
 }
@@ -55,7 +61,7 @@ export const CLIENT = { token: null, name: 'Client Test', email: 'client@duoc.cl
 
 export const meRoute = (user) => ({ match: '/api/auth/me', body: user });
 
-/** Llena un input controlado de React de forma confiable. */
+/** Llena un input/textarea controlado de React de forma confiable. */
 export function setInput(input, value) {
   const proto = input.tagName === 'TEXTAREA'
     ? window.HTMLTextAreaElement.prototype
@@ -63,6 +69,13 @@ export function setInput(input, value) {
   const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
   setter.call(input, value);
   input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/** Cambia un <select> controlado de React. */
+export function setSelect(select, value) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+  setter.call(select, value);
+  select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 export const tick = (ms = 60) => new Promise((r) => setTimeout(r, ms));

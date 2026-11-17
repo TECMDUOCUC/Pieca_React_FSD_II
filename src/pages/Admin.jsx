@@ -30,7 +30,10 @@ export default function Admin() {
     <div className="app-container">
       <Header />
       <main className="container-fluid px-4 py-5 flex-grow-1">
-        <h1 className="mb-4">Panel de Administración</h1>
+        <h1 className="mb-4">
+          {isAdmin ? 'Panel de Administración' : 'Panel de Vendedor'}
+          <span className="role-chip ms-3 align-middle">{isAdmin ? 'ADMIN' : 'VENDEDOR'}</span>
+        </h1>
         {error && <div className="alert alert-danger">{error}</div>}
 
         <div className="mb-4 d-flex gap-2 flex-wrap">

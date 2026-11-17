@@ -10,7 +10,10 @@ module.exports = function (config) {
       { pattern: 'src/**/*.spec.js', watched: false },
       { pattern: 'public/**/*', included: false, served: true, watched: false }
     ],
-
+    proxies: {
+      '/assets/': '/base/public/assets/',
+      '/media/': '/base/public/media/'
+    },
     plugins: [
       'karma-jasmine',
       '@chiragrupani/karma-chromium-edge-launcher',

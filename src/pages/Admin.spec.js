@@ -2,8 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import Admin from './Admin';
-import { mockFetch, withAuth, meRoute, ADMIN, SELLER, SAMPLE_ROCKS, SAMPLE_ORDER, cleanStorage, tick, findButton } from '../test/helpers';
-
+import { mockFetch, withAuth, meRoute, ADMIN, SELLER, SAMPLE_ROCKS, SAMPLE_ORDER, cleanStorage, tick, findButton, setSelect } from '../test/helpers';
 describe('Admin.jsx (panel por rol contra la API)', () => {
   let container, root, mock;
   beforeEach(() => {
@@ -61,19 +60,23 @@ describe('Admin.jsx (panel por rol contra la API)', () => {
     expect(mock.calls.some(c => c.method === 'DELETE' && c.path === '/api/rocks/1')).toBe(true);
   });
 
-  it('pestaña Usuarios lista usuarios y permite cambiar rol', async () => {
+    it('pestaña Usuarios lista usuarios y permite cambiar rol', async () => {
     render(ADMIN, [{ match: '/api/admin/users/2/role', method: 'PUT',
       body: { id: 2, name: 'Juan Perez', email: 'juan@duoc.cl', role: { id: 2, name: 'ROLE_SELLER' } } }]);
     await tick();
     findButton(container, 'Usuarios').click();
     await tick();
     expect(container.textContent).toContain('Juan Perez');
-    const select = container.querySelectorAll('select')[0];
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
-    setter.call(select, 'ROLE_SELLER');
-    select.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const selects = container.querySelectorAll('select');
+    // El primer select es el del propio admin y está deshabilitado (no puedes degradarte).
+    expect(selects[0].disabled).toBe(true);
+    // Cambiamos el rol de OTRO usuario (Juan Perez, fila 2).
+    setSelect(selects[1], 'ROLE_SELLER');
     await tick(80);
+
     const put = mock.calls.find(c => c.method === 'PUT' && c.path === '/api/admin/users/2/role');
+    expect(put).toBeTruthy();
     expect(JSON.parse(put.options.body)).toEqual({ role: 'ROLE_SELLER' });
   });
 

@@ -3,11 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import Contact from './Contact';
 import { AuthProvider } from '../lib/auth.jsx';
+import { setInput, tick, cleanStorage } from '../test/helpers';
+
 describe('Pruebas de renderizado y lógica de Contacto', () => {
-  let container;
-  let root;
+  let container, root;
 
   beforeEach(() => {
+    cleanStorage();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -16,32 +18,18 @@ describe('Pruebas de renderizado y lógica de Contacto', () => {
   afterEach(() => {
     root.unmount();
     container.remove();
+    cleanStorage();
   });
 
-  // Robust helper to set input values in React tests
-  const setInputValue = (input, value) => {
-    // For textarea and input elements, we can often just set .value directly 
-    // if we dispatch the event afterwards, but React sometimes ignores it.
-    // The most reliable way in Jasmine without @testing-library is:
-    Object.defineProperty(input, 'value', {
-      value: value,
-      writable: true,
-      configurable: true
-    });
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  };
+  const render = () => root.render(
+    <AuthProvider>
+      <BrowserRouter><Contact /></BrowserRouter>
+    </AuthProvider>
+  );
 
   it('debe renderizar el formulario de contacto con todos los campos', async () => {
-    root.render(
-      <AuthProvider>
-        <BrowserRouter>
-          <Contact />
-        </BrowserRouter>
-      </AuthProvider>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+    render();
+    await tick();
     expect(container.textContent).toContain('Contáctenos');
     expect(container.querySelector('#name')).toBeTruthy();
     expect(container.querySelector('#email')).toBeTruthy();
@@ -51,55 +39,31 @@ describe('Pruebas de renderizado y lógica de Contacto', () => {
   });
 
   it('debe mostrar el mensaje de éxito al enviar el formulario', async () => {
-    root.render(
-      <BrowserRouter>
-        <Contact />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+    render();
+    await tick();
     const form = container.querySelector('form');
-    const nameInput = form.querySelector('#name');
-    const emailInput = form.querySelector('#email');
-    const subjectInput = form.querySelector('#subject');
-    const messageInput = form.querySelector('#message');
-    
-    // Fill out the form using the safe helper
-    setInputValue(nameInput, 'Test User');
-    setInputValue(emailInput, 'test@duoc.cl');
-    setInputValue(subjectInput, 'Test Subject');
-    setInputValue(messageInput, 'Test Message');
-
+    setInput(form.querySelector('#name'), 'Test User');
+    setInput(form.querySelector('#email'), 'test@duoc.cl');
+    setInput(form.querySelector('#subject'), 'Test Subject');
+    setInput(form.querySelector('#message'), 'Test Message');
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+    await tick();
     expect(container.textContent).toContain('¡Mensaje enviado!');
     expect(container.textContent).toContain('Gracias por contactarnos.');
-    expect(container.querySelector('form')).toBeNull(); // Form should be hidden
+    expect(container.querySelector('form')).toBeNull();
   });
 
   it('debe permitir enviar otro mensaje después del éxito', async () => {
-    root.render(
-      <BrowserRouter>
-        <Contact />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Submit once
-    const form = container.querySelector('form');
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Click "Enviar otro mensaje"
-    const resetBtn = container.querySelector('.btn-outline-light');
+    render();
+    await tick();
+    container.querySelector('form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await tick();
+    const resetBtn = Array.from(container.querySelectorAll('button'))
+      .find((b) => b.textContent.includes('Enviar otro mensaje'));
     resetBtn.click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.querySelector('form')).toBeTruthy(); // Form should be back
+    await tick();
+    expect(container.querySelector('form')).toBeTruthy();
     expect(container.textContent).not.toContain('¡Mensaje enviado!');
   });
 });
