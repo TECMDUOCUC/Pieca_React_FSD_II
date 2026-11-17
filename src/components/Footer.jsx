@@ -9,7 +9,7 @@ export default function Footer() {
       <p className="m-0 d-md-block">&copy; 2026 Pieca&reg;. Todos los derechos reservados.</p>
 
       <div className="row">
-        <Link to="/blog" className="text-white text-decoration-none">Blog</Link>
+        <Link to="/blogs" className="text-white text-decoration-none">Blog</Link>
         <Link to="/contact" className="text-white text-decoration-none">Contáctanos</Link>
       </div>
 

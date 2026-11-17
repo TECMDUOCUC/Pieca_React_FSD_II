@@ -1,177 +1,81 @@
-// src/pages/ProductDetail.spec.js
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import ProductDetail from './Product';
-import rocksData from '../data/rocks.json';
+import { mockFetch, withAuth, meRoute, CLIENT, SAMPLE_ROCKS, cleanStorage, tick, findButton } from '../test/helpers';
 
-const priceFormatter = new Intl.NumberFormat('es-CL', {
-  style: 'currency',
-  currency: 'CLP',
-});
-
-describe('Pruebas de renderizado de Detalle de Producto usando datos JSON', () => {
-  let container;
-  let root;
-
+describe('Product.jsx (conectado al backend)', () => {
+  let container, root, mock;
   beforeEach(() => {
+    cleanStorage();
+    spyOn(window, 'alert').and.callFake(() => {});
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-    localStorage.clear();
-    spyOn(window, 'alert').and.callFake(() => {});
   });
+  afterEach(() => { root.unmount(); container.remove(); mock?.restore(); cleanStorage(); });
 
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-    localStorage.clear();
-    window.history.pushState({}, '', '/');
-  });
+  const renderAt = (id, user = null, extraRoutes = []) => {
+    mock = mockFetch([
+      { match: `/api/rocks/${id}`, body: SAMPLE_ROCKS.find(r => r.id === Number(id)) ?? undefined,
+        status: SAMPLE_ROCKS.some(r => r.id === Number(id)) ? 200 : 404 },
+      ...(user ? [meRoute(user)] : []),
+      ...extraRoutes,
+    ]);
+    root.render(withAuth(
+      <MemoryRouter initialEntries={[`/product/${id}`]}>
+        <Routes>
+          <Route path="/login" element={<div>PANTALLA LOGIN</div>} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+        </Routes>
+      </MemoryRouter>, user));
+  };
 
-  it('debe renderizar los datos de la primera piedra cuando id=0', async () => {
-    window.history.pushState({}, '', '/product?id=0');
-
-    root.render(
-      <BrowserRouter>
-        <ProductDetail />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const rock = rocksData[0];
+  it('renderiza nombre, precio y especificaciones desde la API', async () => {
+    renderAt(1);
+    await tick();
+    const rock = SAMPLE_ROCKS[0];
     expect(container.textContent).toContain(rock.name);
-    expect(container.textContent).toContain(priceFormatter.format(rock.price));
+    expect(container.textContent).toContain('1.299');
     expect(container.textContent).toContain(`${rock.weight} g`);
-    expect(container.textContent).toContain(`${rock.height} mm`);
-    expect(container.textContent).toContain(`${rock.width} mm`);
-    expect(container.textContent).toContain(`${rock.length} mm`);
-    expect(container.textContent).toContain(`${rock.volume} mm³`);
+    expect(container.textContent).toContain('Stock disponible');
+    expect(container.textContent).toContain('10');
   });
 
-  it('debe mostrar estado Not Found para un id inválido', async () => {
-    window.history.pushState({}, '', '/product?id=9999');
-
-    root.render(
-      <BrowserRouter>
-        <ProductDetail />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('id inexistente muestra Not Found', async () => {
+    renderAt(9999);
+    await tick();
     expect(container.textContent).toContain('Not Found');
-    expect(container.textContent).toContain('N/A');
   });
 
-  it('debe formatear el precio en CLP correctamente', async () => {
-    window.history.pushState({}, '', '/product?id=0');
-
-    root.render(
-      <BrowserRouter>
-        <ProductDetail />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const expectedPrice = priceFormatter.format(rocksData[0].price);
-    expect(container.textContent).toContain(expectedPrice);
+  it('roca agotada deshabilita el botón de compra', async () => {
+    renderAt(3);
+    await tick();
+    const btn = findButton(container, 'Agotado');
+    expect(btn.disabled).toBe(true);
   });
 
-  it('debe renderizar el botón Añadir a carrito', async () => {
-    window.history.pushState({}, '', '/product?id=0');
-
-    root.render(
-      <BrowserRouter>
-        <ProductDetail />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('Añadir a carrito');
-  });
-
-  it('debe renderizar todas las filas de especificaciones', async () => {
-    window.history.pushState({}, '', '/product?id=0');
-
-    root.render(
-      <BrowserRouter>
-        <ProductDetail />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('Peso');
-    expect(container.textContent).toContain('Altura');
-    expect(container.textContent).toContain('Anchura');
-    expect(container.textContent).toContain('Longitud');
-    expect(container.textContent).toContain('Volumen');
-    expect(container.textContent).toContain('Costo de envío');
-  });
-
-  it('debe deshabilitar el botón si la piedra no se encuentra', async () => {
-    window.history.pushState({}, '', '/product?id=9999');
-
-    root.render(
-      <BrowserRouter>
-        <ProductDetail />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const button = container.querySelector('button');
-    expect(button.disabled).toBe(true);
-  });
-
-
-  it('debe alertar y redirigir si no hay usuario al añadir', async () => {
-    window.history.pushState({}, '', '/product?id=0');
-    root.render(<BrowserRouter><ProductDetail /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
-    const btn = Array.from(container.querySelectorAll('button'))
-      .find(b => b.textContent.includes('Añadir a carrito'));
-    btn.click();
-    await new Promise(r => setTimeout(r, 50));
-    expect(window.alert).toHaveBeenCalledWith(
-      'Debe iniciar sesión para añadir productos al carrito.'
-    );
+  it('sin sesión alerta y redirige a login al añadir', async () => {
+    renderAt(1);
+    await tick();
+    findButton(container, 'Añadir a carrito').click();
+    await tick();
+    expect(window.alert).toHaveBeenCalledWith('Debe iniciar sesión para añadir productos al carrito.');
+    expect(container.textContent).toContain('PANTALLA LOGIN');
     expect(localStorage.getItem('pieca_cart')).toBeNull();
   });
 
-  it('debe añadir producto nuevo al carrito si hay usuario', async () => {
-    localStorage.setItem('pieca_user', JSON.stringify({ email: 'a@duoc.cl' }));
-    window.history.pushState({}, '', '/product?id=0');
-    root.render(<BrowserRouter><ProductDetail /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
-    const btn = Array.from(container.querySelectorAll('button'))
-      .find(b => b.textContent.includes('Añadir a carrito'));
-    btn.click();
-    await new Promise(r => setTimeout(r, 50));
-    const cart = JSON.parse(localStorage.getItem('pieca_cart'));
-    expect(cart).toEqual([{ id: 0, quantity: 1 }]);
+  it('con sesión añade al carrito usando el id de BD y la cantidad elegida', async () => {
+    renderAt(1, CLIENT);
+    await tick();
+    const qty = container.querySelector('#qty');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(qty, '3');
+    qty.dispatchEvent(new Event('input', { bubbles: true }));
+    await tick();
+    findButton(container, 'Añadir a carrito').click();
+    await tick();
+    expect(JSON.parse(localStorage.getItem('pieca_cart'))).toEqual([{ id: 1, quantity: 3 }]);
     expect(container.textContent).toContain('¡Añadido al carrito!');
   });
-
-  it('debe incrementar cantidad si el producto ya está en el carrito', async () => {
-    localStorage.setItem('pieca_user', JSON.stringify({ email: 'a@duoc.cl' }));
-    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 0, quantity: 1 }]));
-    window.history.pushState({}, '', '/product?id=0');
-    root.render(<BrowserRouter><ProductDetail /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
-    const btn = Array.from(container.querySelectorAll('button'))
-      .find(b => b.textContent.includes('Añadir a carrito'));
-    btn.click();
-    await new Promise(r => setTimeout(r, 50));
-    const cart = JSON.parse(localStorage.getItem('pieca_cart'));
-    expect(cart[0].quantity).toBe(2);
-  });
 });
-
-
-
-

@@ -1,174 +1,108 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter } from 'react-router';
 import Admin from './Admin';
-import rocksData from '../data/rocks.json';
+import { mockFetch, withAuth, meRoute, ADMIN, SELLER, SAMPLE_ROCKS, SAMPLE_ORDER, cleanStorage, tick, findButton } from '../test/helpers';
 
-describe('Pruebas de renderizado y lógica del Panel de Administración', () => {
-  let container;
-  let root;
-
+describe('Admin.jsx (panel por rol contra la API)', () => {
+  let container, root, mock;
   beforeEach(() => {
+    cleanStorage();
+    spyOn(window, 'alert').and.callFake(() => {});
+    spyOn(window, 'confirm').and.returnValue(true);
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-    localStorage.clear();
-    // Mock alert to prevent blocking tests
-    spyOn(window, 'alert').and.callFake(() => {});
-    // Mock confirm to automatically accept deletions in tests
-    spyOn(window, 'confirm').and.returnValue(true);
   });
+  afterEach(() => { root.unmount(); container.remove(); mock?.restore(); cleanStorage(); });
 
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-    localStorage.clear();
-  });
+  const baseRoutes = (user) => [
+    meRoute(user),
+    { match: '/api/rocks', body: SAMPLE_ROCKS },
+    { match: '/api/admin/users', body: [
+      { id: 1, name: 'Admin Test', email: 'admin@pieca.cl', rut: null, role: { id: 1, name: 'ROLE_ADMIN' } },
+      { id: 2, name: 'Juan Perez', email: 'juan@duoc.cl', rut: '12.345.678-5', role: { id: 3, name: 'ROLE_CLIENT' } },
+    ]},
+    { match: '/api/admin/sales', body: [SAMPLE_ORDER] },
+  ];
 
-  it('debe renderizar el panel con las pestañas de navegación', async () => {
-    root.render(
-      <BrowserRouter>
-        <Admin />
-      </BrowserRouter>
-    );
+  const render = (user, extra = []) => {
+    mock = mockFetch([...baseRoutes(user), ...extra]);
+    root.render(withAuth(<MemoryRouter><Admin /></MemoryRouter>, user));
+  };
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('ADMIN ve las 4 pestañas y el inventario por defecto', async () => {
+    render(ADMIN);
+    await tick();
     expect(container.textContent).toContain('Panel de Administración');
-    expect(container.querySelector('.btn-outline-light')).toBeTruthy(); // Tabs
-    expect(container.textContent).toContain('Inventario');
-    expect(container.textContent).toContain('Añadir Roca');
-    expect(container.textContent).toContain('Usuarios');
+    ['Inventario', 'Añadir Roca', 'Usuarios', 'Ventas'].forEach(t =>
+      expect(container.textContent).toContain(t));
+    expect(container.textContent).toContain('Piedra algo ovalada');
+    expect(container.textContent).toContain('Agotado'); // Sigma stock 0
+  });
+
+  it('SELLER solo ve Inventario y Ventas, sin botones de edición', async () => {
+    render(SELLER);
+    await tick();
+    expect(container.textContent).toContain('Panel de Vendedor');
     expect(container.textContent).toContain('Ventas');
+    expect(container.textContent).not.toContain('Añadir Roca');
+    expect(container.textContent).not.toContain('Usuarios');
+    expect(findButton(container, 'Editar')).toBeUndefined();
+    expect(findButton(container, 'Eliminar')).toBeUndefined();
   });
 
-  it('debe mostrar la tabla de inventario por defecto', async () => {
-    root.render(
-      <BrowserRouter>
-        <Admin />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('ID');
-    expect(container.textContent).toContain('Nombre');
-    expect(container.textContent).toContain(rocksData[0].name);
+  it('ADMIN elimina una roca llamando DELETE /api/rocks/:id', async () => {
+    render(ADMIN, [{ match: '/api/rocks/1', method: 'DELETE', status: 204, body: null }]);
+    await tick();
+    const deletes = Array.from(container.querySelectorAll('.btn-danger'));
+    deletes[0].click();
+    await tick(80);
+    expect(mock.calls.some(c => c.method === 'DELETE' && c.path === '/api/rocks/1')).toBe(true);
   });
 
-  it('debe permitir añadir una nueva roca al inventario', async () => {
-    root.render(
-      <BrowserRouter>
-        <Admin />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Switch to Add Rock tab
-    const addTabBtn = Array.from(container.querySelectorAll('.btn')).find(btn => btn.textContent === 'Añadir Roca');
-    addTabBtn.click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Fill form
-    const inputs = container.querySelectorAll('input');
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-
-    // Map inputs to fields based on placeholder or order
-    // Name, Price, Shipping, Weight, Height, Width, Length, Volume, Imgdir
-    const setVal = (index, val) => {
-      nativeInputValueSetter.call(inputs[index], val);
-      inputs[index].dispatchEvent(new Event('input', { bubbles: true }));
-    };
-
-    setVal(0, 'Roca de Prueba');
-    setVal(1, '5000');
-    setVal(2, '1000');
-    setVal(3, '200');
-    setVal(4, '10');
-    setVal(5, '10');
-    setVal(6, '10');
-    setVal(7, '1000');
-    setVal(8, 'assets/1.png');
-
-    const form = container.querySelector('form');
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(window.alert).toHaveBeenCalledWith('¡Roca guardada exitosamente!');
-    
-    // Verify it's in localStorage
-    const customRocks = JSON.parse(localStorage.getItem('pieca_custom_rocks'));
-    expect(customRocks.length).toBe(1);
-    expect(customRocks[0].name).toBe('Roca de Prueba');
+  it('pestaña Usuarios lista usuarios y permite cambiar rol', async () => {
+    render(ADMIN, [{ match: '/api/admin/users/2/role', method: 'PUT',
+      body: { id: 2, name: 'Juan Perez', email: 'juan@duoc.cl', role: { id: 2, name: 'ROLE_SELLER' } } }]);
+    await tick();
+    findButton(container, 'Usuarios').click();
+    await tick();
+    expect(container.textContent).toContain('Juan Perez');
+    const select = container.querySelectorAll('select')[0];
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+    setter.call(select, 'ROLE_SELLER');
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await tick(80);
+    const put = mock.calls.find(c => c.method === 'PUT' && c.path === '/api/admin/users/2/role');
+    expect(JSON.parse(put.options.body)).toEqual({ role: 'ROLE_SELLER' });
   });
 
-  it('debe eliminar una roca del inventario', async () => {
-    // First, add a rock so we have something to delete
-    const customRock = { name: 'Roca a Borrar', price: 100, 'shipping-fee': 0, weight: 1, height: 1, width: 1, length: 1, volume: 1, imgdir: '' };
-    localStorage.setItem('pieca_custom_rocks', JSON.stringify([customRock]));
-
-    root.render(
-      <BrowserRouter>
-        <Admin />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Find and click delete button for the custom rock
-    const deleteBtns = container.querySelectorAll('.btn-danger');
-    // The custom rock should be at the end of the list
-    if (deleteBtns.length > 0) {
-      // Click the last delete button (our custom rock)
-      deleteBtns[deleteBtns.length - 1].click();
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // Verify it's removed from localStorage
-      const customRocks = JSON.parse(localStorage.getItem('pieca_custom_rocks'));
-      expect(customRocks.length).toBe(0);
-      
-      // Verify it's added to deleted names if it was a default rock, 
-      // but since it was custom, it should just be gone from custom list.
-    }
+  it('SELLER cambia el estado de una venta vía PUT', async () => {
+    render(SELLER, [{ match: '/api/admin/sales/7/status', method: 'PUT',
+      body: { ...SAMPLE_ORDER, status: 'SHIPPING' } }]);
+    await tick();
+    findButton(container, 'Ventas').click();
+    await tick();
+    expect(container.textContent).toContain('BOL-7');
+    const select = container.querySelector('select');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+    setter.call(select, 'SHIPPING');
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await tick(80);
+    const put = mock.calls.find(c => c.method === 'PUT' && c.path === '/api/admin/sales/7/status');
+    expect(JSON.parse(put.options.body)).toEqual({ status: 'SHIPPING' });
   });
 
-  it('debe mostrar la tabla de usuarios al cambiar de pestaña', async () => {
-    root.render(
-      <BrowserRouter>
-        <Admin />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Switch to Users tab
-    const usersTabBtn = Array.from(container.querySelectorAll('.btn')).find(btn => btn.textContent === 'Usuarios');
-    usersTabBtn.click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('Carlos Mendoza Silva');
-    expect(container.textContent).toContain('Administrador');
-  });
-
-  it('debe mostrar la tabla de ventas al cambiar de pestaña', async () => {
-    root.render(
-      <BrowserRouter>
-        <Admin />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Switch to Sales tab
-    const salesTabBtn = Array.from(container.querySelectorAll('.btn')).find(btn => btn.textContent === 'Ventas');
-    salesTabBtn.click();
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('BOL-10492');
-    expect(container.textContent).toContain('Completado');
+  it('estados terminales deshabilitan el select de estado', async () => {
+    mock = mockFetch([
+      meRoute(SELLER),
+      { match: '/api/rocks', body: SAMPLE_ROCKS },
+      { match: '/api/admin/sales', body: [{ ...SAMPLE_ORDER, status: 'DELIVERED' }] },
+    ]);
+    root.render(withAuth(<MemoryRouter><Admin /></MemoryRouter>, SELLER));
+    await tick();
+    findButton(container, 'Ventas').click();
+    await tick();
+    expect(container.querySelector('select').disabled).toBe(true);
   });
 });

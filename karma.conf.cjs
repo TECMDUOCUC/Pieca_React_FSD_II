@@ -7,7 +7,8 @@ module.exports = function (config) {
     frameworks: ['jasmine'],
 
     files: [
-      { pattern: 'src/**/*.spec.js', watched: false }
+      { pattern: 'src/**/*.spec.js', watched: false },
+      { pattern: 'public/**/*', included: false, served: true, watched: false }
     ],
 
     plugins: [
@@ -31,7 +32,8 @@ module.exports = function (config) {
       resolveExtensions: ['.jsx', '.js', '.json'],
       define: {
         'process.env.NODE_ENV': '"test"',
-        'import.meta.env.BASE_URL': JSON.stringify('/')
+        'import.meta.env.BASE_URL': JSON.stringify('/'),
+        'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:8080')
       },
       plugins: [
         esbuildPluginIstanbul({
@@ -66,4 +68,3 @@ module.exports = function (config) {
     concurrency: Infinity
   });
 };
-

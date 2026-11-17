@@ -152,17 +152,17 @@ export default function RockForm({ initial = null, onSaved }) {
         </div>
       )}
 
-      <div className="mb-3">
-        <label className="form-label" htmlFor="rock-name">Nombre</label>
-        <input id="rock-name" className="form-control" value={fields.name}
+      <div className="mb-3 text-white">
+        <label className="form-label text-white" htmlFor="rock-name">Nombre</label>
+        <input id="rock-name" className="form-control text-white" value={fields.name}
                onChange={(e) => setField('name', e.target.value)} maxLength={150} required />
       </div>
 
       <div className="row g-3 mb-3">
         {NUMERIC_FIELDS.map((f) => (
           <div className="col-6 col-md-3" key={f.key}>
-            <label className="form-label" htmlFor={`rock-${f.key}`}>{f.label}</label>
-            <input id={`rock-${f.key}`} type="number" className="form-control"
+            <label className="form-label text-white" htmlFor={`rock-${f.key}`}>{f.label}</label>
+            <input id={`rock-${f.key}`} type="number" className="form-control text-white"
                    min={f.min} step={f.integer ? 1 : 'any'}
                    value={fields[f.key]} onChange={(e) => setField(f.key, e.target.value)}
                    required={f.required} />

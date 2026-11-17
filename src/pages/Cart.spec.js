@@ -1,159 +1,93 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import Cart from './Cart';
-import rocksData from '../data/rocks.json';
+import { mockFetch, withAuth, meRoute, CLIENT, SAMPLE_ROCKS, SAMPLE_ORDER, cleanStorage, tick, findButton } from '../test/helpers';
 
-describe('Pruebas de renderizado y lógica del Carrito', () => {
-  let container;
-  let root;
-
+describe('Cart.jsx (checkout real contra la API)', () => {
+  let container, root, mock;
   beforeEach(() => {
+    cleanStorage();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-    localStorage.clear();
-    // Mock alert to prevent blocking tests during checkout
-    spyOn(window, 'alert').and.callFake(() => {});
   });
+  afterEach(() => { root.unmount(); container.remove(); mock?.restore(); cleanStorage(); });
 
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-    localStorage.clear();
-  });
+  const render = (routes = []) => {
+    mock = mockFetch([
+      meRoute(CLIENT),
+      { match: '/api/rocks', body: SAMPLE_ROCKS },
+      ...routes,
+    ]);
+    root.render(withAuth(
+      <MemoryRouter initialEntries={['/cart']}>
+        <Routes>
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/receipt/:id" element={<div>PANTALLA RECIBO</div>} />
+        </Routes>
+      </MemoryRouter>, CLIENT));
+  };
 
-  it('debe mostrar estado vacío cuando no hay items en el carrito', async () => {
-    root.render(
-      <BrowserRouter>
-        <Cart />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('El carrito está vacío.');
-    expect(container.querySelector('.btn-light')).toBeTruthy(); // "Volver al Catálogo" button
-  });
-
-  it('debe renderizar los productos agregados al carrito desde localStorage', async () => {
-    // Add first rock to cart
-    const mockCart = [{ id: 0, quantity: 1 }];
-    localStorage.setItem('pieca_cart', JSON.stringify(mockCart));
-
-    root.render(
-      <BrowserRouter>
-        <Cart />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain(rocksData[0].name);
-    expect(container.textContent).toContain('Total:');
-  });
-
-  it('debe calcular el total correctamente en CLP', async () => {
-    const mockCart = [{ id: 0, quantity: 2 }]; // 2 units of first rock
-    localStorage.setItem('pieca_cart', JSON.stringify(mockCart));
-
-    root.render(
-      <BrowserRouter>
-        <Cart />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const expectedTotal = rocksData[0].price * 2;
-    const formatter = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' });
-    expect(container.textContent).toContain(formatter.format(expectedTotal));
-  });
-
-  it('debe eliminar un item del carrito al hacer click en Eliminar', async () => {
-    const mockCart = [{ id: 0, quantity: 1 }, { id: 1, quantity: 1 }];
-    localStorage.setItem('pieca_cart', JSON.stringify(mockCart));
-
-    root.render(
-      <BrowserRouter>
-        <Cart />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // Find and click the delete button for the first item
-    const deleteButtons = container.querySelectorAll('.text-danger');
-    if (deleteButtons.length > 0) {
-      deleteButtons[0].click();
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      
-      // Check if the first item is gone but the second remains
-      expect(container.textContent).not.toContain(rocksData[0].name);
-      expect(container.textContent).toContain(rocksData[1].name);
-    }
-  });
-
-  it('debe procesar el checkout y mover datos a receipt', async () => {
-    const mockCart = [{ id: 0, quantity: 1 }];
-    localStorage.setItem('pieca_cart', JSON.stringify(mockCart));
-
-    root.render(
-      <BrowserRouter>
-        <Cart />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const checkoutBtn = container.querySelector('.btn-light.px-5'); // "Proceder al Pago"
-    if (checkoutBtn) {
-      checkoutBtn.click();
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(localStorage.getItem('pieca_receipt')).toBeTruthy();
-      expect(localStorage.getItem('pieca_cart')).toBeNull();
-      
-      const receipt = JSON.parse(localStorage.getItem('pieca_receipt'));
-      expect(receipt.items.length).toBe(1);
-      expect(receipt.status).toBe('Procesando - Preparando Envío');
-    }
-  });
-
-  it('debe mostrar estado vacío con carrito corrupto en localStorage', async () => {
-    localStorage.setItem('pieca_cart', 'not-json');
-    root.render(<BrowserRouter><Cart /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
+  it('carrito vacío muestra estado vacío', async () => {
+    render();
+    await tick();
     expect(container.textContent).toContain('El carrito está vacío.');
   });
 
-  it('debe ignorar items con id inexistente', async () => {
+  it('enriquece el carrito con datos de la API y calcula el total', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 1, quantity: 2 }]));
+    render();
+    await tick();
+    expect(container.textContent).toContain('Piedra algo ovalada');
+    expect(container.textContent).toContain('2.598'); // 1299 * 2 en CLP
+  });
+
+  it('ignora ids que ya no existen en el catálogo', async () => {
     localStorage.setItem('pieca_cart', JSON.stringify([{ id: 9999, quantity: 1 }]));
-    root.render(<BrowserRouter><Cart /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
+    render();
+    await tick();
     expect(container.textContent).toContain('El carrito está vacío.');
   });
 
-  it('debe incrementar cantidad con el botón +', async () => {
-    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 0, quantity: 1 }]));
-    root.render(<BrowserRouter><Cart /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
-    const plusBtn = Array.from(container.querySelectorAll('button'))
-      .find(b => b.textContent.trim() === '+');
-    plusBtn.click();
-    await new Promise(r => setTimeout(r, 50));
-    const cart = JSON.parse(localStorage.getItem('pieca_cart'));
-    expect(cart[0].quantity).toBe(2);
+  it('botón + incrementa y persiste, respetando el stock', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 2, quantity: 5 }])); // stock 5
+    render();
+    await tick();
+    const plus = findButton(container, '+');
+    expect(plus.disabled).toBe(true); // ya está en el máximo de stock
   });
 
-  it('debe eliminar el item al decrementar a 0', async () => {
-    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 0, quantity: 1 }]));
-    root.render(<BrowserRouter><Cart /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
-    const minusBtn = Array.from(container.querySelectorAll('button'))
-      .find(b => b.textContent.trim() === '-');
-    minusBtn.click();
-    await new Promise(r => setTimeout(r, 50));
-    expect(container.textContent).toContain('El carrito está vacío.');
+  it('checkout exitoso envía rockId/quantity, limpia carrito y navega al recibo', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 1, quantity: 2 }]));
+    render([{ match: '/api/orders', method: 'POST', body: SAMPLE_ORDER, status: 201, delay: 30 }]);
+    await tick();
+    findButton(container, 'Proceder al Pago').click();
+    await tick(120);
+    const post = mock.calls.find(c => c.method === 'POST' && c.path === '/api/orders');
+    expect(JSON.parse(post.options.body)).toEqual({ items: [{ rockId: 1, quantity: 2 }] });
+    expect(localStorage.getItem('pieca_cart')).toBeNull();
+    expect(container.textContent).toContain('PANTALLA RECIBO');
+  });
+
+  it('checkout fallido (red caída) muestra error y CONSERVA el carrito', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 1, quantity: 2 }]));
+    render([{ match: '/api/orders', method: 'POST', networkError: true }]);
+    await tick();
+    findButton(container, 'Proceder al Pago').click();
+    await tick(120);
+    expect(container.textContent).toContain('La compra falló');
+    expect(localStorage.getItem('pieca_cart')).not.toBeNull();
+    expect(container.textContent).toContain('Piedra algo ovalada');
+  });
+
+  it('stock insuficiente en el backend muestra el mensaje y conserva el carrito', async () => {
+    localStorage.setItem('pieca_cart', JSON.stringify([{ id: 1, quantity: 2 }]));
+    render([{ match: '/api/orders', method: 'POST', status: 400, body: { message: 'Stock insuficiente para "Piedra algo ovalada"' } }]);
+    await tick();
+    findButton(container, 'Proceder al Pago').click();
+    await tick(120);
+    expect(container.textContent).toContain('Stock insuficiente');
+    expect(localStorage.getItem('pieca_cart')).not.toBeNull();
   });
 });

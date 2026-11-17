@@ -1,33 +1,3 @@
-#!/usr/bin/env python3
-"""
-scan_to_json.py
-
-Recursively scans a folder (and all of its subfolders / sub-subfolders) and
-dumps the complete tree — directory structure + text file contents — into a
-structured JSON file called `context.json`.
-
-Usage:
-    python scan_to_json.py                # scan current directory
-    python scan_to_json.py /path/to/root  # scan a specific folder
-    python scan_to_json.py -o out.json --max-size 1048576
-
-The generated JSON has this shape:
-
-    {
-      "root": "/abs/path",
-      "generated_at": "...",
-      "summary": {"files": 12, "folders": 3},
-      "tree": {
-        "name": "root",
-        "type": "folder",
-        "path": "root",
-        "children": [
-          {"name": "a.txt", "type": "file", "path": "root/a.txt", "size": 5, "content": "hello"},
-          {"name": "sub",  "type": "folder", "path": "root/sub", "children": [ ... ]}
-        ]
-      }
-    }
-"""
 
 from __future__ import annotations
 

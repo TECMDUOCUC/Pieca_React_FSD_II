@@ -22,7 +22,8 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, timeou
   }
 
   try {
-    const res = await fetch(`${API_URL}${path}`, { method, headers, body: payload, signal: controller.signal });
+    const versionedPath = path.startsWith('/api/') ? path.replace('/api/', '/api/v1/') : path;
+    const res = await fetch(`${API_URL}${versionedPath}`, { method, headers, body: payload, signal: controller.signal });
 
     // Token expirado/inválido en cualquier endpoint -> cerrar sesión globalmente.
     if (res.status === 401 && auth) {

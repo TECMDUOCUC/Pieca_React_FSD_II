@@ -2,109 +2,54 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import CatalogPage from './Catalog';
-import rocksData from '../data/rocks.json';
+import { mockFetch, withAuth, SAMPLE_ROCKS, cleanStorage, tick, setInput } from '../test/helpers';
 
-describe('Pruebas de renderizado de Catálogo usando datos JSON', () => {
-  let container;
-  let root;
-
+describe('Catalog.jsx (conectado al backend)', () => {
+  let container, root, mock;
   beforeEach(() => {
+    cleanStorage();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
   });
+  afterEach(() => { root.unmount(); container.remove(); mock?.restore(); cleanStorage(); });
 
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-  });
+  const render = () => root.render(withAuth(<BrowserRouter><CatalogPage /></BrowserRouter>, null));
 
-  it('debe renderizar correctamente todas las piedras desde el JSON', async () => {
-    root.render(
-      <BrowserRouter>
-        <CatalogPage />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('carga y renderiza las rocas desde la API', async () => {
+    mock = mockFetch([{ match: '/api/rocks', body: SAMPLE_ROCKS }]);
+    render();
+    await tick();
     expect(container.textContent).toContain('Catálogo Pieca');
-
-    rocksData.forEach((rock) => {
-      expect(container.textContent).toContain(rock.name);
-    });
+    SAMPLE_ROCKS.forEach((r) => expect(container.textContent).toContain(r.name));
+    expect(container.textContent).toContain('3 producto(s) encontrados.');
+    expect(mock.calls.some(c => c.path === '/api/rocks')).toBe(true);
   });
 
-  it('debe mostrar el conteo correcto de productos', async () => {
-    root.render(
-      <BrowserRouter>
-        <CatalogPage />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain(`${rocksData.length} producto(s) encontrados.`);
-  });
-
-  it('debe renderizar un botón Visitar por cada piedra', async () => {
-    root.render(
-      <BrowserRouter>
-        <CatalogPage />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const visitButtons = container.querySelectorAll('.carousel-visit-btn');
-    expect(visitButtons.length).toBe(rocksData.length);
-  });
-
-  it('debe filtrar piedras al escribir en el buscador', async () => {
-    root.render(
-      <BrowserRouter>
-        <CatalogPage />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const searchInput = container.querySelector('#catalog-search');
-    // We use the first rock's name to ensure a match exists in the current JSON
-    const firstRockName = rocksData[0].name;
-
-    // Simulate typing into the input
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-    nativeInputValueSetter.call(searchInput, firstRockName.toLowerCase());
-    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain(firstRockName);
+  it('filtra al escribir en el buscador', async () => {
+    mock = mockFetch([{ match: '/api/rocks', body: SAMPLE_ROCKS }]);
+    render();
+    await tick();
+    setInput(container.querySelector('#catalog-search'), 'sigma');
+    await tick();
+    expect(container.textContent).toContain('Piedra Sigma');
     expect(container.textContent).toContain('1 producto(s) encontrados.');
   });
 
-  it('debe mostrar estado vacío cuando no hay coincidencias', async () => {
-    root.render(
-      <BrowserRouter>
-        <CatalogPage />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const searchInput = container.querySelector('#catalog-search');
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-    nativeInputValueSetter.call(searchInput, 'xyznonexistent');
-    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('muestra estado vacío sin coincidencias', async () => {
+    mock = mockFetch([{ match: '/api/rocks', body: SAMPLE_ROCKS }]);
+    render();
+    await tick();
+    setInput(container.querySelector('#catalog-search'), 'xyznonexistent');
+    await tick();
     expect(container.textContent).toContain('No se encontraron productos.');
     expect(container.textContent).toContain('0 producto(s) encontrados.');
+  });
+
+  it('muestra error si el backend falla', async () => {
+    mock = mockFetch([{ match: '/api/rocks', networkError: true }]);
+    render();
+    await tick();
+    expect(container.textContent).toContain('No se pudo conectar');
   });
 });

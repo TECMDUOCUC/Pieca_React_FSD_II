@@ -1,173 +1,89 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import Register from './Register';
+import { mockFetch, cleanStorage, tick, setInput } from '../test/helpers';
+import { AuthProvider } from '../lib/auth.jsx';
 
-describe('Pruebas de renderizado y lógica de Registro', () => {
-  let container;
-  let root;
-
+describe('Register.jsx (registro real vía API)', () => {
+  let container, root, mock;
   beforeEach(() => {
+    cleanStorage();
+    spyOn(window, 'alert').and.callFake(() => {});
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-    localStorage.clear();
-    // Mock alert to prevent blocking tests
-    spyOn(window, 'alert').and.callFake(() => {});
   });
+  afterEach(() => { root.unmount(); container.remove(); mock?.restore(); cleanStorage(); });
 
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-    localStorage.clear();
-  });
+  const render = () => root.render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/register']}>
+        <Routes>
+          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<div>PANTALLA HOME</div>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>);
 
-  it('debe renderizar el formulario de registro con todos los campos', async () => {
-    root.render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
+  const fill = async ({ name = 'Juan Perez', rut = '12.345.678-5', email = 'juan@duoc.cl', password = 'secret', confirm = 'secret' } = {}) => {
+    setInput(container.querySelector('#name'), name);
+    setInput(container.querySelector('#rut'), rut);
+    setInput(container.querySelector('#email'), email);
+    setInput(container.querySelector('#password'), password);
+    setInput(container.querySelector('#confirm'), confirm);
+    container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await tick(80);
+  };
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('Regístrese');
-    expect(container.querySelector('#name')).toBeTruthy();
-    expect(container.querySelector('#rut')).toBeTruthy();
-    expect(container.querySelector('#email')).toBeTruthy();
-    expect(container.querySelector('#password')).toBeTruthy();
-  });
-
-  it('debe mostrar error si el RUT no es válido', async () => {
-    root.render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const form = container.querySelector('form');
-    const inputs = form.querySelectorAll('input');
-    
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-
-    nativeInputValueSetter.call(inputs[0], 'Test User');
-    inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[1], '123'); // Invalid RUT
-    inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[2], 'test@gmail.com');
-    inputs[2].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[3], 'password123');
-    inputs[3].dispatchEvent(new Event('input', { bubbles: true }));
-
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('RUT inválido se rechaza en el cliente sin llamar a la API', async () => {
+    mock = mockFetch([]);
+    render();
+    await tick();
+    await fill({ rut: '123' });
     expect(container.textContent).toContain('El RUT ingresado no es válido.');
+    expect(mock.calls.length).toBe(0);
   });
 
-  it('debe mostrar error si el dominio del correo no es permitido', async () => {
-    root.render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const form = container.querySelector('form');
-    const inputs = form.querySelectorAll('input');
-    
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-
-    nativeInputValueSetter.call(inputs[0], 'Test User');
-    inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-
-    // Use a VALID RUT here so the code passes RUT validation and checks Email
-    // 12.345.678-5 is valid for body 12345678
-    nativeInputValueSetter.call(inputs[1], '12.345.678-5'); 
-    inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[2], 'test@bad.com');
-    inputs[2].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[3], 'password123');
-    inputs[3].dispatchEvent(new Event('input', { bubbles: true }));
-
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('dominio no permitido se rechaza en el cliente', async () => {
+    mock = mockFetch([]);
+    render();
+    await tick();
+    await fill({ email: 'test@bad.com' });
     expect(container.textContent).toContain('Solo se permiten correos de @duoc.cl');
   });
 
-  it('debe registrar el usuario correctamente con datos válidos', async () => {
-    root.render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const form = container.querySelector('form');
-    const inputs = form.querySelectorAll('input');
-    
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-
-    nativeInputValueSetter.call(inputs[0], 'Juan Perez');
-    inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-
-    // Valid RUT
-    nativeInputValueSetter.call(inputs[1], '12.345.678-5'); 
-    inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[2], 'juan@duoc.cl');
-    inputs[2].dispatchEvent(new Event('input', { bubbles: true }));
-
-    nativeInputValueSetter.call(inputs[3], 'secret');
-    inputs[3].dispatchEvent(new Event('input', { bubbles: true }));
-
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    // Wait longer for alert and navigate simulation
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    expect(localStorage.getItem('pieca_user')).toBeTruthy();
-    const user = JSON.parse(localStorage.getItem('pieca_user'));
-    expect(user.name).toBe('Juan Perez');
-    expect(user.rut).toBe('12.345.678-5');
+  it('contraseñas distintas se rechazan', async () => {
+    mock = mockFetch([]);
+    render();
+    await tick();
+    await fill({ confirm: 'otra' });
+    expect(container.textContent).toContain('Las contraseñas no coinciden.');
   });
 
-  it('debe mostrar error si el cuerpo del RUT tiene letras', async () => {
-    root.render(<BrowserRouter><Register /></BrowserRouter>);
-    await new Promise(r => setTimeout(r, 50));
-    const form = container.querySelector('form');
-    const inputs = form.querySelectorAll('input');
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-    const setVal = (i, v) => {
-      setter.call(inputs[i], v);
-      inputs[i].dispatchEvent(new Event('input', { bubbles: true }));
-    };
-    setVal(0, 'Test');
-    setVal(1, 'ABC12345-5');
-    setVal(2, 'test@duoc.cl');
-    setVal(3, 'pwd');
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    await new Promise(r => setTimeout(r, 50));
-    expect(container.textContent).toContain('El RUT ingresado no es válido.');
+  it('registro exitoso envía el payload, guarda token y navega', async () => {
+    mock = mockFetch([{
+      match: '/api/auth/register', method: 'POST',
+      body: { token: 'jwt-nuevo', name: 'Juan Perez', email: 'juan@duoc.cl', role: 'ROLE_CLIENT' },
+    }]);
+    render();
+    await tick();
+    await fill();
+    const post = mock.calls.find(c => c.path === '/api/auth/register');
+    expect(JSON.parse(post.options.body)).toEqual({
+      name: 'Juan Perez', rut: '12.345.678-5', email: 'juan@duoc.cl', password: 'secret',
+    });
+    expect(localStorage.getItem('pieca_token')).toBe('jwt-nuevo');
+    expect(window.alert).toHaveBeenCalledWith('¡Registro exitoso!');
+    expect(container.textContent).toContain('PANTALLA HOME');
+  });
+
+  it('email duplicado en el backend muestra el error', async () => {
+    mock = mockFetch([{ match: '/api/auth/register', method: 'POST', status: 400, body: { message: 'Ya existe una cuenta con ese email' } }]);
+    render();
+    await tick();
+    await fill();
+    expect(container.textContent).toContain('Ya existe una cuenta con ese email');
+    expect(localStorage.getItem('pieca_token')).toBeNull();
   });
 });

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import Blogs from './Blogs';
 import blogsData from '../data/blogs.json';
-
+import { AuthProvider } from '../lib/auth.jsx';
 describe('Pruebas de renderizado de Blogs usando datos JSON', () => {
   let container;
   let root;
@@ -20,11 +20,7 @@ describe('Pruebas de renderizado de Blogs usando datos JSON', () => {
   });
 
   it('debe renderizar correctamente todos los blogs desde el JSON', async () => {
-    root.render(
-      <BrowserRouter>
-        <Blogs />
-      </BrowserRouter>
-    );
+    root.render(<AuthProvider><BrowserRouter><Blogs /></BrowserRouter></AuthProvider>);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 

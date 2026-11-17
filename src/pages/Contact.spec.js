@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import Contact from './Contact';
-
+import { AuthProvider } from '../lib/auth.jsx';
 describe('Pruebas de renderizado y lógica de Contacto', () => {
   let container;
   let root;
@@ -33,9 +33,11 @@ describe('Pruebas de renderizado y lógica de Contacto', () => {
 
   it('debe renderizar el formulario de contacto con todos los campos', async () => {
     root.render(
-      <BrowserRouter>
-        <Contact />
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Contact />
+        </BrowserRouter>
+      </AuthProvider>
     );
 
     await new Promise((resolve) => setTimeout(resolve, 50));

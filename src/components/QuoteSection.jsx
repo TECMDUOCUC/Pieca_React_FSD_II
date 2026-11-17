@@ -24,7 +24,7 @@ export default function QuoteSection({ items }) {
 
   return (
     <section className="background-section">
-      <p id="quote" className="fade-in">{quote}</p>
+      <p id="quote" className="fade-in text-white">{quote}</p>
       {stonedImage && (
         <img id="stoned" src={resolveImageUrl(stonedImage)} alt="Una piedra" className="fade-in w-25" />
       )}

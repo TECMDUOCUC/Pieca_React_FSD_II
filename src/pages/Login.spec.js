@@ -1,100 +1,66 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import Login from './Login';
+import { mockFetch, cleanStorage, tick, setInput, findButton } from '../test/helpers';
+import { AuthProvider } from '../lib/auth.jsx';
 
-describe('Pruebas de renderizado y lógica de Login', () => {
-  let container;
-  let root;
-
+describe('Login.jsx (JWT real)', () => {
+  let container, root, mock;
   beforeEach(() => {
+    cleanStorage();
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-    localStorage.clear();
   });
+  afterEach(() => { root.unmount(); container.remove(); mock?.restore(); cleanStorage(); });
 
-  afterEach(() => {
-    root.unmount();
-    container.remove();
-    localStorage.clear();
-  });
+  const render = () => root.render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<div>PANTALLA HOME</div>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>);
 
-  it('debe renderizar el formulario de inicio de sesión', async () => {
-    root.render(
-      <BrowserRouter>
-        <Login />
-      </BrowserRouter>
-    );
+  const fillAndSubmit = async (email, password) => {
+    setInput(container.querySelector('#email'), email);
+    setInput(container.querySelector('#password'), password);
+    container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await tick(80);
+  };
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
+  it('renderiza el formulario', async () => {
+    mock = mockFetch([]);
+    render();
+    await tick();
     expect(container.textContent).toContain('Inicie Sesión');
     expect(container.querySelector('#email')).toBeTruthy();
     expect(container.querySelector('#password')).toBeTruthy();
-    expect(container.textContent).toContain('Iniciar Sesión');
   });
 
-  it('debe mostrar error si el dominio del correo no es permitido', async () => {
-    root.render(
-      <BrowserRouter>
-        <Login />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const emailInput = container.querySelector('#email');
-    const passwordInput = container.querySelector('#password');
-    const form = container.querySelector('form');
-
-    // Simulate typing invalid email
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-    
-    nativeInputValueSetter.call(emailInput, 'test@invalid.com');
-    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-    
-    nativeInputValueSetter.call(passwordInput, '123456');
-    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(container.textContent).toContain('Solo se permiten correos de @duoc.cl');
+  it('login exitoso guarda el token JWT y navega a home', async () => {
+    mock = mockFetch([{
+      match: '/api/auth/login', method: 'POST',
+      body: { token: 'jwt-falso-123', name: 'Admin', email: 'admin@pieca.cl', role: 'ROLE_ADMIN' },
+    }]);
+    render();
+    await tick();
+    await fillAndSubmit('admin@pieca.cl', 'admin123');
+    expect(localStorage.getItem('pieca_token')).toBe('jwt-falso-123');
+    expect(container.textContent).toContain('PANTALLA HOME');
+    const post = mock.calls.find(c => c.path === '/api/auth/login');
+    expect(JSON.parse(post.options.body)).toEqual({ email: 'admin@pieca.cl', password: 'admin123' });
   });
 
-  it('debe guardar el usuario en localStorage al iniciar sesión exitosamente', async () => {
-    root.render(
-      <BrowserRouter>
-        <Login />
-      </BrowserRouter>
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    const emailInput = container.querySelector('#email');
-    const passwordInput = container.querySelector('#password');
-    const form = container.querySelector('form');
-
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype, 'value'
-    ).set;
-    
-    nativeInputValueSetter.call(emailInput, 'student@duoc.cl');
-    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-    
-    nativeInputValueSetter.call(passwordInput, 'securepass');
-    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    expect(localStorage.getItem('pieca_user')).toBeTruthy();
-    const user = JSON.parse(localStorage.getItem('pieca_user'));
-    expect(user.email).toBe('student@duoc.cl');
+  it('credenciales inválidas (401) muestra el error y NO guarda token', async () => {
+    mock = mockFetch([{ match: '/api/auth/login', method: 'POST', status: 401, body: { message: 'Credenciales inválidas' } }]);
+    render();
+    await tick();
+    await fillAndSubmit('admin@pieca.cl', 'wrong');
+    expect(container.textContent).toContain('Credenciales inválidas');
+    expect(localStorage.getItem('pieca_token')).toBeNull();
   });
 });
