@@ -69,7 +69,7 @@ export default function Register() {
               <label htmlFor="confirm" className="form-label text-black">Confirmar Contraseña</label>
               <input id="confirm" name="confirm" type="password" className="form-control" value={formData.confirm} onChange={handleChange} required />
             </div>
-            <button type="submit" className="btn btn-light w-100 text-black" disabled={busy}>
+            <button type="submit" className="btn btn-light w-100 text-white" disabled={busy}>
               {busy ? 'Registrando...' : 'Registrar'}
             </button>
           </form>
